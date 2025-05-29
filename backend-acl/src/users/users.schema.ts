@@ -11,7 +11,7 @@ export class User {
   @Prop({ required: true })
   firstName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   middlename: string;
 
   @Prop({ required: true })
@@ -23,7 +23,7 @@ export class User {
   @Prop({ required: true })
   jobTitle: string;
 
-  @Prop({ enum: ['12 hours', '1 day', '3 days','Weekly','Monthly'], required: true })
+  @Prop({ enum: ['12 hours', '1 day', '3 days','7 days'], required: true })
   reminder: string;
 }
 
