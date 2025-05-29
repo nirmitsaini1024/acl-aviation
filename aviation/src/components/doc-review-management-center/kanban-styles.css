@@ -1,0 +1,289 @@
+/* kanban-styles.css */
+.kanban-container {
+    width: 100%;
+    min-height: 500px;
+    margin-bottom: 2rem;
+  }
+  
+  /* Overall Kanban styles */
+  .custom-kanban {
+    font-family: inherit;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Board header styles */
+  .custom-kanban .e-kanban-header {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0;
+  }
+  
+  .custom-kanban .e-header-cells {
+    padding: 12px;
+    border-right: 1px solid #e2e8f0;
+  }
+  
+  .custom-kanban .e-header-cells:last-child {
+    border-right: none;
+  }
+  
+  /* Column header styling */
+  .kanban-column-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #1e3a8a;
+  }
+  
+  .kanban-column-header-icon {
+    display: flex;
+    align-items: center;
+  }
+  
+  .kanban-column-header-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .kanban-column-count {
+    font-weight: normal;
+    color: #475569;
+    font-size: 13px;
+  }
+  
+  /* Content cells styling */
+  .custom-kanban .e-content-row {
+    display: flex;
+    height: auto !important;
+    min-height: 300px;
+  }
+  
+  .custom-kanban .e-content-cells {
+    padding: 12px;
+    background-color: #f9fafb;
+    border-right: 1px solid #e2e8f0;
+  }
+  
+  .custom-kanban .e-content-cells:last-child {
+    border-right: none;
+  }
+  
+  /* Column background colors */
+  .custom-kanban .e-content-cells:nth-child(1) {
+    background-color: rgba(254, 226, 226, 0.3);
+  }
+  
+  .custom-kanban .e-content-cells:nth-child(2) {
+    background-color: rgba(219, 234, 254, 0.3);
+  }
+  
+  .custom-kanban .e-content-cells:nth-child(3) {
+    background-color: rgba(254, 240, 138, 0.3);
+  }
+  
+  /* Custom card styling */
+  .kanban-card {
+    background-color: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+    padding: 12px;
+    border-left: 3px solid #ddd;
+    transition: all 0.2s ease;
+    cursor: grab;
+  }
+  
+  .kanban-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .kanban-card:active {
+    cursor: grabbing;
+  }
+  
+  /* Final version card */
+  .kanban-card[data-priority="High"] {
+    border-left-color: #ef4444;
+  }
+  
+  /* Working copy card */
+  .kanban-card[data-priority="Normal"] {
+    border-left-color: #3b82f6;
+  }
+  
+  .kanban-card-header {
+    margin-bottom: 8px;
+  }
+  
+  .kanban-card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #1e3a8a;
+  }
+  
+  .kanban-card-content {
+    font-size: 12px;
+    color: #64748b;
+  }
+  
+  .kanban-card-tag {
+    display: inline-block;
+    padding: 2px 6px;
+    background-color: #f1f5f9;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  
+  .kanban-card-status {
+    font-size: 11px;
+    color: #6b7280;
+  }
+  
+  /* Empty column placeholder */
+  .custom-kanban .e-content-cells:empty::after {
+    content: "Drag documents here";
+    display: flex;
+    height: 120px;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.5rem;
+    color: #94a3b8;
+    background-color: rgba(255, 255, 255, 0.7);
+    margin: 8px;
+    font-size: 14px;
+  }
+  
+  /* Drag indicator styling */
+  .custom-kanban .e-card.e-cloned-card {
+    background-color: white !important;
+    opacity: 0.9;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: rotate(2deg);
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* Card on drag highlight */
+  .custom-kanban .e-card.e-target-drag {
+    opacity: 0.6;
+    border: 1px dashed #93c5fd;
+  }
+  
+  /* Focus and hover states for better accessibility */
+  .custom-kanban .e-card:focus,
+  .custom-kanban .e-card:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .custom-kanban .e-content-row {
+      flex-direction: column;
+    }
+    
+    .custom-kanban .e-content-cells {
+      width: 100% !important;
+      border-right: none;
+      border-bottom: 1px solid #e2e8f0;
+      min-height: 200px;
+    }
+    
+    .custom-kanban .e-content-cells:last-child {
+      border-bottom: none;
+    }
+    
+    .custom-kanban .e-header-cells {
+      width: 100% !important;
+      border-right: none;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .custom-kanban .e-header-cells:last-child {
+      border-bottom: none;
+    }
+  }
+  /* Add this to your global CSS or as a style tag in your component */
+.scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+  
+  .scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+  }
+  
+  /* Force overflow content to be visible */
+  .overflow-y-auto {
+    overflow-y: scroll !important;
+  }
+
+  /* kanban-styles.css */
+/* WebKit (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #CBD5E1;
+    border-radius: 4px;
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+  }
+  
+  /* Ensure columns always have a minimum height */
+  .min-h-\[300px\] {
+    min-height: 300px !important;
+  }
+  
+  /* Force overflow to be scroll, not auto */
+  .overflow-y-scroll {
+    overflow-y: scroll !important;
+    -ms-overflow-style: scrollbar !important;
+  }
+  
+  /* Column styling */
+  .rounded-lg.shadow-sm.p-4 {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .rounded-lg.shadow-sm.p-4 > div:last-child {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Empty state styling */
+  .border-2.border-dashed.rounded-lg {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-color: #e2e8f0;
+  }
