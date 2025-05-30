@@ -32,4 +32,6 @@ export class CreateUserDto {
   @IsEnum(['12 hours', '1 day', '3 days', '7 days'])
   @IsNotEmpty()
   reminder: string;
+
+  
 }
