@@ -1,4 +1,4 @@
-import { Body, Controller, HttpStatus, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Res } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 
@@ -23,17 +23,16 @@ export class UsersController {
         }
     }
 
-
+    @Get()
     async getUsers(@Res() response) {
         try {
-        const UserData = await this.userService.getAllUsers();
-        return response.status(HttpStatus.OK).json({
-            message: 'All Users data fetch successfully',
-            UserData,
-        });
+            const UserData = await this.userService.getAllUsers();
+            return response.status(HttpStatus.OK).json({
+                message: 'All Users data fetch successfully',
+                UserData,
+            });
         } catch (err) {
-        return response.status(err.status).json(err.response);
+            return response.status(err.status).json(err.response);
         }
     }
-
 }
