@@ -1,4 +1,6 @@
-import { IsNotEmpty, IsOptional, IsString } from '@nestjs/class-validator';
+import { IsNotEmpty, IsOptional, IsString, ValidateNested } from '@nestjs/class-validator';
+import { Type } from '@nestjs/class-transformer';
+import { DocumentRepoAccessDto } from './document-repo-access.dto';
 
 export class CreateRoleDto {
   @IsString()
@@ -24,4 +26,8 @@ export class CreateRoleDto {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  @ValidateNested()
+  @Type(() => DocumentRepoAccessDto)
+  documentRepoAccess: DocumentRepoAccessDto;
 }

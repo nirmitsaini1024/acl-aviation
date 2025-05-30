@@ -22,6 +22,14 @@ export class RoleService {
     return roleData;
   }
 
+  async getRoleById(id: string) {
+    const role = await this.roleModel.findById(id);
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+    return role;
+  }
+
   async updateRole(id: string, updateRoleDto: UpdateRoleDto) {
     const updatedRole = await this.roleModel.findByIdAndUpdate(id, updateRoleDto, {
       new: true,
@@ -33,5 +41,13 @@ export class RoleService {
     }
 
     return updatedRole;
+  }
+
+  async deleteRole(id: string) {
+    const result = await this.roleModel.findByIdAndDelete(id);
+    if (!result) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+    return { message: 'Role deleted successfully' };
   }
 }
