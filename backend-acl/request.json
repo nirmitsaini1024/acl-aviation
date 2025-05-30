@@ -1,0 +1,14 @@
+
+//post request to create a new user in the ACL system
+// Method: POST
+// http://localhost:3000/users
+{
+  "domain": "Airline",
+  "department": "TSC",
+  "firstName": "DOE",
+  "middlename": "A",
+  "lastName": "John",
+  "email": "doe@example.com",
+  "jobTitle": "Engg",
+  "reminder": "1 day"
+}
