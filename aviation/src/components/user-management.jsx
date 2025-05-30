@@ -9,6 +9,7 @@ import {
   Loader2,
   ArrowUpDown,
   X,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -85,89 +86,105 @@ const departmentOptions = {
     "Airport Operations",
     "Public Safety",
   ],
-  Airline: ["Airline Security", "Airline Operations"],
+  Airline: ["Airline Security", "Airline Operations", "TSC"],
 };
 
 // Reminder options
 const reminderOptions = ["12 hours", "1 day", "3 days", "7 days"];
 
-const initialUsers = [
-  {
-    id: "1",
-    firstName: "John",
-    middleName: "",
-    lastName: "Doe",
-    employeeId: "EMP001",
-    domain: "Airport",
-    department: "TSA",
-    reminder: "1 day",
-    email: "john.doe@example.com",
-    title: "Software Engineer",
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    middleName: "Marie",
-    lastName: "Smith",
-    employeeId: "EMP002",
-    domain: "Airline",
-    department: "Airline Security",
-    reminder: "3 days",
-    email: "jane.smith@example.com",
-    title: "HR Manager",
-  },
-  {
-    id: "3",
-    firstName: "Robert",
-    middleName: "",
-    lastName: "Johnson",
-    employeeId: "EMP003",
-    domain: "Airport",
-    department: "FAA",
-    reminder: "7 days",
-    email: "robert.johnson@example.com",
-    title: "Financial Analyst",
-  },
-  {
-    id: "4",
-    firstName: "Emily",
-    middleName: "Rose",
-    lastName: "Williams",
-    employeeId: "EMP004",
-    domain: "Airport",
-    department: "Airport Security",
-    reminder: "12 hours",
-    email: "emily.williams@example.com",
-    title: "Marketing Specialist",
-  },
-  {
-    id: "5",
-    firstName: "Michael",
-    middleName: "",
-    lastName: "Brown",
-    employeeId: "EMP005",
-    domain: "Airline",
-    department: "Airline Operations",
-    reminder: "1 day",
-    email: "michael.brown@example.com",
-    title: "System Administrator",
-  },
-];
+// API functions
+const API_BASE_URL = "http://localhost:3000";
+
+const fetchUsers = async () => {
+  try {
+    console.log('Fetching users from API...');
+    const response = await fetch(`${API_BASE_URL}/users`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Fetched users:', data);
+    
+    // Extract the UserData array from the response
+    // Your API returns: { message: "...", UserData: [...] }
+    // We need just the UserData array
+    return data.UserData || data || [];
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+const createUser = async (userData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw error;
+  }
+};
+
+const updateUser = async (userId, userData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error updating user:", error);
+    throw error;
+  }
+};
+
+const deleteUser = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return true;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
+};
 
 // UserForm Component
 function UserForm({ user, onSave, onCancel }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    id: user?.id || "",
+    _id: user?._id || "",
     firstName: user?.firstName || "",
-    middleName: user?.middleName || "",
+    middlename: user?.middlename || "",
     lastName: user?.lastName || "",
     employeeId: user?.employeeId || "",
     domain: user?.domain || "",
     department: user?.department || "",
     reminder: user?.reminder || "",
     email: user?.email || "",
-    title: user?.title || "",
+    jobTitle: user?.jobTitle || "",
   });
 
   const handleChange = (e) => {
@@ -191,36 +208,52 @@ function UserForm({ user, onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Prepare data in the required format
+      const apiData = {
+        domain: formData.domain,
+        department: formData.department,
+        firstName: formData.firstName,
+        middlename: formData.middlename,
+        lastName: formData.lastName,
+        email: formData.email,
+        jobTitle: formData.jobTitle,
+        reminder: formData.reminder,
+      };
+
+      let savedUser;
+      if (user && user._id) {
+        // Update existing user
+        savedUser = await updateUser(user._id, apiData);
+      } else {
+        // Create new user
+        savedUser = await createUser(apiData);
+      }
 
       if (onSave) {
-        // If creating a new user, generate a new ID
-        const userToSave = {
-          ...formData,
-          id: formData.id || Date.now().toString(),
-        };
-        onSave(userToSave);
+        onSave(savedUser);
       }
 
       // Reset form only if it's a new user creation (not editing)
       if (!user) {
         setFormData({
-          id: "",
+          _id: "",
           firstName: "",
-          middleName: "",
+          middlename: "",
           lastName: "",
           employeeId: "",
           domain: "",
           department: "",
           reminder: "",
           email: "",
-          title: "",
+          jobTitle: "",
         });
       }
     } catch (error) {
       console.error("Form submission failed:", error);
+      setError(error.message || "Failed to save user. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -233,6 +266,12 @@ function UserForm({ user, onSave, onCancel }) {
       </CardHeader>
       <div onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="domain">Domain *</Label>
@@ -291,12 +330,12 @@ function UserForm({ user, onSave, onCancel }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="middleName">Middle Name</Label>
+              <Label htmlFor="middlename">Middle Name</Label>
               <Input
-                id="middleName"
-                name="middleName"
+                id="middlename"
+                name="middlename"
                 placeholder="Enter middle name (optional)"
-                value={formData.middleName}
+                value={formData.middlename}
                 onChange={handleChange}
                 className="border border-gray-200 focus:border-blue-500"
               />
@@ -330,13 +369,13 @@ function UserForm({ user, onSave, onCancel }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="jobTitle">Job Title *</Label>
               <Input
-                id="title"
-                name="title"
+                id="jobTitle"
+                name="jobTitle"
                 placeholder="Enter job title"
                 required
-                value={formData.title}
+                value={formData.jobTitle}
                 onChange={handleChange}
                 className="border border-gray-200 focus:border-blue-500"
               />
@@ -409,19 +448,21 @@ function Badge({ children, variant = "default" }) {
 
 // Main User Management App Component (for integration into existing pages)
 export function UserManagementApp({ showAddForm, onToggleForm }) {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [nameSearchTerm, setNameSearchTerm] = useState(""); // New state for name-specific search
-  const [emailSearchTerm, setEmailSearchTerm] = useState(""); // New state for email-specific search
-  const [titleSearchTerm, setTitleSearchTerm] = useState(""); // New state for title-specific search
-  const [reminderSearchTerm, setReminderSearchTerm] = useState(""); // New state for reminder-specific search
+  const [nameSearchTerm, setNameSearchTerm] = useState("");
+  const [emailSearchTerm, setEmailSearchTerm] = useState("");
+  const [titleSearchTerm, setTitleSearchTerm] = useState("");
+  const [reminderSearchTerm, setReminderSearchTerm] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [sortConfig, setSortConfig] = useState(null);
   const [openPopover, setOpenPopover] = useState(null);
-  const [showNameSearch, setShowNameSearch] = useState(false); // Toggle for name search input
-  const [showEmailSearch, setShowEmailSearch] = useState(false); // Toggle for email search input
-  const [showTitleSearch, setShowTitleSearch] = useState(false); // Toggle for title search input
-  const [showReminderSearch, setShowReminderSearch] = useState(false); // Toggle for reminder search input
+  const [showNameSearch, setShowNameSearch] = useState(false);
+  const [showEmailSearch, setShowEmailSearch] = useState(false);
+  const [showTitleSearch, setShowTitleSearch] = useState(false);
+  const [showReminderSearch, setShowReminderSearch] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Refs for the search popups to detect clicks outside
   const searchPopupRef = useRef(null);
@@ -429,37 +470,57 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
   const titlePopupRef = useRef(null);
   const reminderPopupRef = useRef(null);
 
+  // Load users on component mount
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Loading users...');
+      const userData = await fetchUsers();
+      console.log('Users loaded:', userData);
+      // Ensure userData is always an array
+      const usersArray = Array.isArray(userData) ? userData : [];
+      setUsers(usersArray);
+      console.log('Users set to state:', usersArray);
+    } catch (err) {
+      setError("Failed to load users. Please check if the server is running on localhost:3000");
+      console.error("Error loading users:", err);
+      // Set empty array on error
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Effect to handle clicks outside the search popups
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check name search popup
       if (searchPopupRef.current && !searchPopupRef.current.contains(event.target)) {
         setShowNameSearch(false);
         setNameSearchTerm("");
       }
-      // Check email search popup
       if (emailPopupRef.current && !emailPopupRef.current.contains(event.target)) {
         setShowEmailSearch(false);
         setEmailSearchTerm("");
       }
-      // Check title search popup
       if (titlePopupRef.current && !titlePopupRef.current.contains(event.target)) {
         setShowTitleSearch(false);
         setTitleSearchTerm("");
       }
-      // Check reminder search popup
       if (reminderPopupRef.current && !reminderPopupRef.current.contains(event.target)) {
         setShowReminderSearch(false);
         setReminderSearchTerm("");
       }
     };
 
-    // Add event listener when any popup is open
     if (showNameSearch || showEmailSearch || showTitleSearch || showReminderSearch) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
-    // Cleanup event listener
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -469,55 +530,58 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     {
       key: "name",
       label: "Name",
-      sortValue: (user) => `${user.firstName} ${user.lastName}`.toLowerCase(),
+      sortValue: (user) => `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase(),
     },
     {
       key: "email",
       label: "Email",
-      sortValue: (user) => user.email.toLowerCase(),
+      sortValue: (user) => (user.email || '').toLowerCase(),
     },
     {
-      key: "title",
-      label: "Title",
-      sortValue: (user) => user.title.toLowerCase(),
+      key: "jobTitle",
+      label: "Job Title",
+      sortValue: (user) => (user.jobTitle || '').toLowerCase(),
     },
     {
       key: "reminder",
       label: "Reminder",
-      sortValue: (user) => user.reminder.toLowerCase(),
+      sortValue: (user) => (user.reminder || '').toLowerCase(),
     },
   ];
 
   const sortedAndFilteredUsers = () => {
+    // Ensure users is always an array
+    if (!Array.isArray(users)) {
+      console.warn('Users is not an array:', users);
+      return [];
+    }
+
     let filtered = users.filter((user) => {
       const fullName =
-        `${user.firstName} ${user.middleName} ${user.lastName}`.toLowerCase();
+        `${user.firstName || ''} ${user.middlename || ''} ${user.lastName || ''}`.toLowerCase();
       const searchLower = searchTerm.toLowerCase();
 
-      // Apply global search filter
       const globalMatch = (
         fullName.includes(searchLower) ||
-        user.employeeId.toLowerCase().includes(searchLower) ||
-        user.domain.toLowerCase().includes(searchLower) ||
-        user.department.toLowerCase().includes(searchLower) ||
-        user.email.toLowerCase().includes(searchLower) ||
-        user.title.toLowerCase().includes(searchLower) ||
-        user.reminder.toLowerCase().includes(searchLower)
+        (user.employeeId && user.employeeId.toLowerCase().includes(searchLower)) ||
+        (user.domain && user.domain.toLowerCase().includes(searchLower)) ||
+        (user.department && user.department.toLowerCase().includes(searchLower)) ||
+        (user.email && user.email.toLowerCase().includes(searchLower)) ||
+        (user.jobTitle && user.jobTitle.toLowerCase().includes(searchLower)) ||
+        (user.reminder && user.reminder.toLowerCase().includes(searchLower))
       );
 
-      // Apply specific search filters if active
-      // Updated name search to include user's domain and department tags
       const nameMatch = nameSearchTerm ?
         fullName.includes(nameSearchTerm.toLowerCase()) ||
-        user.domain.toLowerCase().includes(nameSearchTerm.toLowerCase()) ||
-        user.department.toLowerCase().includes(nameSearchTerm.toLowerCase())
+        (user.domain && user.domain.toLowerCase().includes(nameSearchTerm.toLowerCase())) ||
+        (user.department && user.department.toLowerCase().includes(nameSearchTerm.toLowerCase()))
         : true;
       const emailMatch = emailSearchTerm ?
-        user.email.toLowerCase().includes(emailSearchTerm.toLowerCase()) : true;
+        (user.email && user.email.toLowerCase().includes(emailSearchTerm.toLowerCase())) : true;
       const titleMatch = titleSearchTerm ?
-        user.title.toLowerCase().includes(titleSearchTerm.toLowerCase()) : true;
+        (user.jobTitle && user.jobTitle.toLowerCase().includes(titleSearchTerm.toLowerCase())) : true;
       const reminderMatch = reminderSearchTerm ?
-        user.reminder.toLowerCase().includes(reminderSearchTerm.toLowerCase()) : true;
+        (user.reminder && user.reminder.toLowerCase().includes(reminderSearchTerm.toLowerCase())) : true;
 
       return globalMatch && nameMatch && emailMatch && titleMatch && reminderMatch;
     });
@@ -561,27 +625,22 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     );
   };
 
-  // Handle name sorting specifically
   const handleNameSort = () => {
     requestSort("name");
   };
 
-  // Handle name search toggle
   const handleNameSearchToggle = () => {
     setShowNameSearch(!showNameSearch);
     if (showNameSearch) {
-      // If closing, clear the search term
       setNameSearchTerm("");
     }
   };
 
-  // Clear name search
   const clearNameSearch = () => {
     setNameSearchTerm("");
     setShowNameSearch(false);
   };
 
-  // Handle email sorting and search
   const handleEmailSort = () => {
     requestSort("email");
   };
@@ -598,9 +657,8 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     setShowEmailSearch(false);
   };
 
-  // Handle title sorting and search
   const handleTitleSort = () => {
-    requestSort("title");
+    requestSort("jobTitle");
   };
 
   const handleTitleSearchToggle = () => {
@@ -615,7 +673,6 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     setShowTitleSearch(false);
   };
 
-  // Handle reminder sorting and search
   const handleReminderSort = () => {
     requestSort("reminder");
   };
@@ -632,28 +689,33 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     setShowReminderSearch(false);
   };
 
-  const handleDeleteUser = (userId) => {
-    setUsers(users.filter((user) => user.id !== userId));
-    setOpenPopover(null);
+  const handleDeleteUser = async (userId) => {
+    try {
+      await deleteUser(userId);
+      // Refresh the entire user list from database
+      await loadUsers();
+      setOpenPopover(null);
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      // You might want to show an error message to the user here
+    }
   };
 
   const handleEditUser = (userId) => {
     setEditingUser(userId);
-    setShowAddForm(false);
+    if (onToggleForm) onToggleForm(); // Close add form if open
   };
 
-  const handleSaveUser = (userData) => {
-    if (userData.id && users.find((user) => user.id === userData.id)) {
-      // Editing existing user
-      setUsers(
-        users.map((user) => (user.id === userData.id ? userData : user))
-      );
-    } else {
-      // Adding new user
-      setUsers([...users, userData]);
+  const handleSaveUser = async (userData) => {
+    try {
+      // Always reload from database after save to ensure consistency
+      await loadUsers();
+      setEditingUser(null);
+      if (onToggleForm) onToggleForm(); // Close the form after saving
+    } catch (error) {
+      console.error("Failed to save user:", error);
+      // Error handling is done in the form component
     }
-    setEditingUser(null);
-    if (onToggleForm) onToggleForm(); // Close the form after saving
   };
 
   const handleCancelEdit = () => {
@@ -661,13 +723,35 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
     if (onToggleForm) onToggleForm(); // Close the form when canceling
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading users...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="flex items-center justify-between">
+          <span>{error}</span>
+          <Button onClick={loadUsers} variant="outline" size="sm">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {showAddForm && (
         <UserForm onSave={handleSaveUser} onCancel={handleCancelEdit} />
       )}
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -678,6 +762,16 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Button
+          onClick={loadUsers}
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <div className="rounded-md border border-gray-400">
@@ -708,7 +802,6 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                         <Search className="h-3 w-3" />
                       </Button>
 
-                      {/* Name-specific search popup - positioned above the search icon */}
                       {showNameSearch && (
                         <div
                           ref={searchPopupRef}
@@ -735,7 +828,6 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                                 <X className="h-3 w-3" />
                               </Button>
                             </div>
-                            {/* Small arrow pointing down to the search icon */}
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white"></div>
                           </div>
                         </div>
@@ -767,13 +859,13 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                           variant="ghost"
                           size="sm"
                           className={`h-6 w-6 p-0 text-white hover:bg-blue-700 ${(column.key === 'email' && showEmailSearch) ||
-                            (column.key === 'title' && showTitleSearch) ||
+                            (column.key === 'jobTitle' && showTitleSearch) ||
                             (column.key === 'reminder' && showReminderSearch)
                             ? 'bg-blue-700' : ''
                             }`}
                           onClick={() => {
                             if (column.key === 'email') handleEmailSearchToggle();
-                            else if (column.key === 'title') handleTitleSearchToggle();
+                            else if (column.key === 'jobTitle') handleTitleSearchToggle();
                             else if (column.key === 'reminder') handleReminderSearchToggle();
                           }}
                           title={`Search by ${column.label.toLowerCase()}`}
@@ -781,7 +873,6 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                           <Search className="h-3 w-3" />
                         </Button>
 
-                        {/* Email search popup */}
                         {column.key === 'email' && showEmailSearch && (
                           <div
                             ref={emailPopupRef}
@@ -813,8 +904,7 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                           </div>
                         )}
 
-                        {/* Title search popup */}
-                        {column.key === 'title' && showTitleSearch && (
+                        {column.key === 'jobTitle' && showTitleSearch && (
                           <div
                             ref={titlePopupRef}
                             className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 z-50"
@@ -824,7 +914,7 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                   type="search"
-                                  placeholder="Search by title..."
+                                  placeholder="Search by job title..."
                                   className="pl-8 pr-8 border-blue-500 focus:border-blue-600 text-gray-900 placeholder-gray-500"
                                   value={titleSearchTerm}
                                   onChange={(e) => setTitleSearchTerm(e.target.value)}
@@ -845,7 +935,6 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                           </div>
                         )}
 
-                        {/* Reminder search popup */}
                         {column.key === 'reminder' && showReminderSearch && (
                           <div
                             ref={reminderPopupRef}
@@ -894,8 +983,8 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
               </TableRow>
             ) : (
               sortedAndFilteredUsers().map((user) =>
-                editingUser === user.id ? (
-                  <TableRow key={user.id}>
+                editingUser === user._id ? (
+                  <TableRow key={user._id}>
                     <TableCell colSpan={5}>
                       <UserForm
                         user={user}
@@ -905,11 +994,11 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  <TableRow key={user.id}>
+                  <TableRow key={user._id}>
                     <TableCell>
                       <div className="space-y-2">
                         <div className="font-medium">
-                          {user.firstName} {user.middleName} {user.lastName}
+                          {user.firstName} {user.middlename && user.middlename + ' '}{user.lastName}
                         </div>
                         <div className="flex flex-wrap gap-1">
                           <Badge variant="domain">{user.domain}</Badge>
@@ -917,25 +1006,25 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.title}</TableCell>
-                    <TableCell>{user.reminder}</TableCell>
+                    <TableCell>{user.email || ''}</TableCell>
+                    <TableCell>{user.jobTitle || ''}</TableCell>
+                    <TableCell>{user.reminder || ''}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleEditUser(user.id)}
+                          onClick={() => handleEditUser(user._id)}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Edit</span>
                         </Button>
 
                         <Popover
-                          open={openPopover === user.id}
+                          open={openPopover === user._id}
                           onOpenChange={(open) => {
                             if (open) {
-                              setOpenPopover(user.id);
+                              setOpenPopover(user._id);
                             } else {
                               setOpenPopover(null);
                             }
@@ -969,7 +1058,7 @@ export function UserManagementApp({ showAddForm, onToggleForm }) {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => handleDeleteUser(user.id)}
+                                  onClick={() => handleDeleteUser(user._id)}
                                 >
                                   Delete
                                 </Button>

@@ -12,3 +12,15 @@
   "jobTitle": "Engg",
   "reminder": "1 day"
 }
+
+
+
+// for /groups POST
+
+{
+  "domain": "Airline",
+  "department": "TSC",
+  "groupName": "Ground",
+  "description": "Group responsible for ",
+  "users": ["642c9f1a1a7e3b1234567890", "642c9f1a1a7e3b1234567891"]
+}
