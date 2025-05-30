@@ -23,4 +23,17 @@ export class UsersController {
         }
     }
 
+
+    async getUsers(@Res() response) {
+        try {
+        const UserData = await this.userService.getAllUsers();
+        return response.status(HttpStatus.OK).json({
+            message: 'All Users data fetch successfully',
+            UserData,
+        });
+        } catch (err) {
+        return response.status(err.status).json(err.response);
+        }
+    }
+
 }

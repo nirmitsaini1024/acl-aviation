@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -11,6 +11,15 @@ export class UsersService {
     async createUser(createUserDto : CreateUserDto){
         const newUser =  new this.UserModel(createUserDto);
         return await newUser.save();
+    }
+
+
+    async getAllUsers(){
+        const UserData = await this.UserModel.find();
+        if (!UserData || UserData.length == 0) {
+        throw new NotFoundException('Students data not found!');
+        }
+        return UserData;
     }
 
 }
