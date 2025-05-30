@@ -32,7 +32,7 @@ export default function GroupsPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage className="text-blue-600">Group Management</BreadcrumbPage>
+            <BreadcrumbPage className="text-blue-600">Group Managementt</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

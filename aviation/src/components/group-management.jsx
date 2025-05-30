@@ -10,6 +10,7 @@ import {
   UserPlus,
   X,
   ArrowUpDown,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -88,158 +89,102 @@ const departmentOptions = {
     "Airport Operations",
     "Public Safety",
   ],
-  Airline: ["Airline Security", "Airline Operations"],
+  Airline: ["Airline Security", "Airline Operations", "TSC"],
 };
 
-// Mock users data for the user selection
-const mockUsers = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    domain: "Airport",
-    department: "TSA",
-    title: "Software Engineer",
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    domain: "Airline",
-    department: "Airline Security",
-    title: "HR Manager",
-  },
-  {
-    id: "3",
-    firstName: "Robert",
-    lastName: "Johnson",
-    domain: "Airport",
-    department: "FAA",
-    title: "Financial Analyst",
-  },
-  {
-    id: "4",
-    firstName: "Emily",
-    lastName: "Williams",
-    domain: "Airport",
-    department: "Airport Security",
-    title: "Marketing Specialist",
-  },
-  {
-    id: "5",
-    firstName: "Michael",
-    lastName: "Brown",
-    domain: "Airline",
-    department: "Airline Operations",
-    title: "System Administrator",
-  },
-];
+// API functions
+const API_BASE_URL = "http://localhost:3000";
 
-// Mock initial groups data with domain and department
-const initialGroups = [
-  {
-    id: "1",
-    name: "IT Department",
-    description:
-      "All IT staff including developers, system administrators, and support",
-    domain: "Airport",
-    department: "TSA",
-    members: [
-      {
-        id: "1",
-        firstName: "John",
-        lastName: "Doe",
-        domain: "Airport",
-        department: "TSA",
-        title: "Software Engineer",
+const fetchGroups = async () => {
+  try {
+    console.log('Fetching groups from API...');
+    const response = await fetch(`${API_BASE_URL}/groups`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Fetched groups:', data);
+    
+    // Extract the GroupData array from the response (similar to users structure)
+    return data.GroupData || data || [];
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    throw error;
+  }
+};
+
+const fetchUsers = async () => {
+  try {
+    console.log('Fetching users from API...');
+    const response = await fetch(`${API_BASE_URL}/users`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Fetched users:', data);
+    
+    // Extract the UserData array from the response
+    return data.UserData || data || [];
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+const createGroup = async (groupData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/groups`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      {
-        id: "5",
-        firstName: "Michael",
-        lastName: "Brown",
-        domain: "Airline",
-        department: "Airline Operations",
-        title: "System Administrator",
+      body: JSON.stringify(groupData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error creating group:", error);
+    throw error;
+  }
+};
+
+const updateGroup = async (groupId, groupData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
       },
-    ],
-  },
-  {
-    id: "2",
-    name: "HR Team",
-    description: "Human Resources team responsible for employee management",
-    domain: "Airline",
-    department: "Airline Security",
-    members: [
-      {
-        id: "2",
-        firstName: "Jane",
-        lastName: "Smith",
-        domain: "Airline",
-        department: "Airline Security",
-        title: "HR Manager",
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Finance Department",
-    description: "Financial analysts and accountants",
-    domain: "Airport",
-    department: "FAA",
-    members: [
-      {
-        id: "3",
-        firstName: "Robert",
-        lastName: "Johnson",
-        domain: "Airport",
-        department: "FAA",
-        title: "Financial Analyst",
-      },
-    ],
-  },
-  {
-    id: "4",
-    name: "Marketing Team",
-    description: "Marketing specialists and coordinators",
-    domain: "Airport",
-    department: "Airport Security",
-    members: [
-      {
-        id: "4",
-        firstName: "Emily",
-        lastName: "Williams",
-        domain: "Airport",
-        department: "Airport Security",
-        title: "Marketing Specialist",
-      },
-    ],
-  },
-  {
-    id: "5",
-    name: "Website Redesign Project",
-    description: "Cross-functional team working on the website redesign",
-    domain: "Airport",
-    department: "Public Safety",
-    members: [
-      {
-        id: "1",
-        firstName: "John",
-        lastName: "Doe",
-        domain: "Airport",
-        department: "TSA",
-        title: "Software Engineer",
-      },
-      {
-        id: "4",
-        firstName: "Emily",
-        lastName: "Williams",
-        domain: "Airport",
-        department: "Airport Security",
-        title: "Marketing Specialist",
-      },
-    ],
-  },
-];
+      body: JSON.stringify(groupData),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error updating group:", error);
+    throw error;
+  }
+};
+
+const deleteGroup = async (groupId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return true;
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    throw error;
+  }
+};
 
 // Badge Component
 function Badge({ children, variant = "default" }) {
@@ -259,15 +204,16 @@ function Badge({ children, variant = "default" }) {
 }
 
 // GroupForm Component
-function GroupForm({ group, onSave, onCancel }) {
+function GroupForm({ group, onSave, onCancel, availableUsers = [] }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
-    id: group?.id || "",
-    name: group?.name || "",
+    _id: group?._id || "",
+    groupName: group?.groupName || "",
     description: group?.description || "",
     domain: group?.domain || "",
     department: group?.department || "",
-    members: group?.members || [],
+    users: group?.users || [],
   });
   const [userSearch, setUserSearch] = useState("");
 
@@ -290,10 +236,10 @@ function GroupForm({ group, onSave, onCancel }) {
   };
 
   const handleAddUser = (user) => {
-    if (!formData.members.some((member) => member.id === user.id)) {
+    if (!formData.users.includes(user._id)) {
       setFormData((prev) => ({
         ...prev,
-        members: [...prev.members, user],
+        users: [...prev.users, user._id],
       }));
     }
   };
@@ -301,56 +247,72 @@ function GroupForm({ group, onSave, onCancel }) {
   const handleRemoveUser = (userId) => {
     setFormData((prev) => ({
       ...prev,
-      members: prev.members.filter((member) => member.id !== userId),
+      users: prev.users.filter((id) => id !== userId),
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Prepare data in the required format
+      const apiData = {
+        domain: formData.domain,
+        department: formData.department,
+        groupName: formData.groupName,
+        description: formData.description,
+        users: formData.users,
+      };
+
+      let savedGroup;
+      if (group && group._id) {
+        // Update existing group
+        savedGroup = await updateGroup(group._id, apiData);
+      } else {
+        // Create new group
+        savedGroup = await createGroup(apiData);
+      }
 
       if (onSave) {
-        // If creating a new group, generate a new ID
-        const groupToSave = {
-          ...formData,
-          id: formData.id || Date.now().toString(),
-        };
-        onSave(groupToSave);
+        onSave(savedGroup);
       }
 
       // Reset form only if it's a new group creation (not editing)
       if (!group) {
         setFormData({
-          id: "",
-          name: "",
+          _id: "",
+          groupName: "",
           description: "",
           domain: "",
           department: "",
-          members: [],
+          users: [],
         });
       }
     } catch (error) {
       console.error("Form submission failed:", error);
+      setError(error.message || "Failed to save group. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   // Filter users for the search
-  const filteredUsers = mockUsers.filter((user) => {
-    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+  const filteredUsers = availableUsers.filter((user) => {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
     const searchLower = userSearch.toLowerCase();
 
     return (
       fullName.includes(searchLower) ||
-      user.domain.toLowerCase().includes(searchLower) ||
-      user.department.toLowerCase().includes(searchLower) ||
-      user.title.toLowerCase().includes(searchLower)
+      (user.domain && user.domain.toLowerCase().includes(searchLower)) ||
+      (user.department && user.department.toLowerCase().includes(searchLower)) ||
+      (user.jobTitle && user.jobTitle.toLowerCase().includes(searchLower))
     );
   });
+
+  // Get selected users details for display
+  const selectedUsers = availableUsers.filter(user => formData.users.includes(user._id));
 
   return (
     <Card>
@@ -359,6 +321,12 @@ function GroupForm({ group, onSave, onCancel }) {
       </CardHeader>
       <div onSubmit={handleSubmit}>
         <CardContent className="space-y-5">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          
           {/* Domain and Department Row */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
@@ -406,13 +374,13 @@ function GroupForm({ group, onSave, onCancel }) {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Group Name *</Label>
+              <Label htmlFor="groupName">Group Name *</Label>
               <Input
-                id="name"
-                name="name"
+                id="groupName"
+                name="groupName"
                 placeholder="Enter group name"
                 required
-                value={formData.name}
+                value={formData.groupName}
                 onChange={handleChange}
                 className="border border-gray-200 focus:border-blue-500"
               />
@@ -430,6 +398,7 @@ function GroupForm({ group, onSave, onCancel }) {
               />
             </div>
           </div>
+
           {/* Group Members Section */}
           <div className="space-y-4">
             <div>
@@ -462,7 +431,7 @@ function GroupForm({ group, onSave, onCancel }) {
                     ) : (
                       filteredUsers.map((user) => (
                         <TableRow
-                          key={user.id}
+                          key={user._id}
                           className="cursor-pointer hover:bg-muted"
                         >
                           <TableCell onClick={() => handleAddUser(user)}>
@@ -479,7 +448,7 @@ function GroupForm({ group, onSave, onCancel }) {
                             </div>
                           </TableCell>
                           <TableCell onClick={() => handleAddUser(user)}>
-                            {user.title}
+                            {user.jobTitle}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
@@ -500,7 +469,7 @@ function GroupForm({ group, onSave, onCancel }) {
             )}
 
             {/* Added Members */}
-            {formData.members.length > 0 && (
+            {selectedUsers.length > 0 && (
               <div className="border border-gray-400 rounded-md">
                 <Table>
                   <TableHeader>
@@ -511,8 +480,8 @@ function GroupForm({ group, onSave, onCancel }) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {formData.members.map((member) => (
-                      <TableRow key={member.id}>
+                    {selectedUsers.map((member) => (
+                      <TableRow key={member._id}>
                         <TableCell>
                           <div className="space-y-2">
                             <div className="font-medium">
@@ -526,12 +495,12 @@ function GroupForm({ group, onSave, onCancel }) {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{member.title}</TableCell>
+                        <TableCell>{member.jobTitle}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemoveUser(member.id)}
+                            onClick={() => handleRemoveUser(member._id)}
                           >
                             <X className="h-4 w-4 text-red-500" />
                             <span className="sr-only">Remove</span>
@@ -576,50 +545,79 @@ function GroupForm({ group, onSave, onCancel }) {
 
 // Main Group Management App Component (for integration into existing pages)
 export function GroupManagementApp({ showAddForm, onToggleForm }) {
-  const [groups, setGroups] = useState(initialGroups);
+  const [groups, setGroups] = useState([]);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [nameSearchTerm, setNameSearchTerm] = useState(""); // New state for name-specific search
-  const [membersSearchTerm, setMembersSearchTerm] = useState(""); // New state for members-specific search
-  const [descriptionSearchTerm, setDescriptionSearchTerm] = useState(""); // New state for description-specific search
+  const [nameSearchTerm, setNameSearchTerm] = useState("");
+  const [membersSearchTerm, setMembersSearchTerm] = useState("");
+  const [descriptionSearchTerm, setDescriptionSearchTerm] = useState("");
   const [editingGroup, setEditingGroup] = useState(null);
   const [sortConfig, setSortConfig] = useState(null);
   const [openPopover, setOpenPopover] = useState(null);
-  const [openMembersPopover, setOpenMembersPopover] = useState(null); // Added for members popover
-  const [showNameSearch, setShowNameSearch] = useState(false); // Toggle for name search input
-  const [showMembersSearch, setShowMembersSearch] = useState(false); // Toggle for members search input
-  const [showDescriptionSearch, setShowDescriptionSearch] = useState(false); // Toggle for description search input
+  const [openMembersPopover, setOpenMembersPopover] = useState(null);
+  const [showNameSearch, setShowNameSearch] = useState(false);
+  const [showMembersSearch, setShowMembersSearch] = useState(false);
+  const [showDescriptionSearch, setShowDescriptionSearch] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Refs for the search popups to detect clicks outside
   const namePopupRef = useRef(null);
   const membersPopupRef = useRef(null);
   const descriptionPopupRef = useRef(null);
 
+  // Load groups and users on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Load both groups and users
+      const [groupsData, usersData] = await Promise.all([
+        fetchGroups(),
+        fetchUsers()
+      ]);
+      
+      console.log('Groups loaded:', groupsData);
+      console.log('Users loaded:', usersData);
+      
+      setGroups(Array.isArray(groupsData) ? groupsData : []);
+      setUsers(Array.isArray(usersData) ? usersData : []);
+    } catch (err) {
+      setError("Failed to load data. Please check if the server is running on localhost:3000");
+      console.error("Error loading data:", err);
+      setGroups([]);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Effect to handle clicks outside the search popups
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Check name search popup
       if (namePopupRef.current && !namePopupRef.current.contains(event.target)) {
         setShowNameSearch(false);
         setNameSearchTerm("");
       }
-      // Check members search popup
       if (membersPopupRef.current && !membersPopupRef.current.contains(event.target)) {
         setShowMembersSearch(false);
         setMembersSearchTerm("");
       }
-      // Check description search popup
       if (descriptionPopupRef.current && !descriptionPopupRef.current.contains(event.target)) {
         setShowDescriptionSearch(false);
         setDescriptionSearchTerm("");
       }
     };
 
-    // Add event listener when any popup is open
     if (showNameSearch || showMembersSearch || showDescriptionSearch) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
-    // Cleanup event listener
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -627,63 +625,74 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
 
   const columns = [
     {
-      key: "name",
+      key: "groupName",
       label: "Group Name",
-      sortValue: (group) => group.name.toLowerCase(),
+      sortValue: (group) => (group.groupName || '').toLowerCase(),
     },
     {
-      key: "members",
+      key: "users",
       label: "Members",
-      sortValue: (group) => group.members.length,
+      sortValue: (group) => (group.users || []).length,
     },
     {
       key: "description",
       label: "Description",
-      sortValue: (group) => group.description.toLowerCase(),
+      sortValue: (group) => (group.description || '').toLowerCase(),
     },
   ];
 
+  // Helper function to get user details from user IDs
+  const getUsersFromIds = (userIds) => {
+    if (!Array.isArray(userIds)) return [];
+    return userIds.map(id => users.find(user => user._id === id)).filter(Boolean);
+  };
+
   const sortedAndFilteredGroups = () => {
+    if (!Array.isArray(groups)) {
+      console.warn('Groups is not an array:', groups);
+      return [];
+    }
+
     let filtered = groups.filter((group) => {
       const searchLower = searchTerm.toLowerCase();
+      const groupUsers = getUsersFromIds(group.users || []);
 
       // Check if any member's name contains the search term
-      const memberMatch = group.members.some(
+      const memberMatch = groupUsers.some(
         (member) =>
-          `${member.firstName} ${member.lastName}`
+          `${member.firstName || ''} ${member.lastName || ''}`
             .toLowerCase()
             .includes(searchLower) ||
-          member.domain.toLowerCase().includes(searchLower) ||
-          member.department.toLowerCase().includes(searchLower)
+          (member.domain && member.domain.toLowerCase().includes(searchLower)) ||
+          (member.department && member.department.toLowerCase().includes(searchLower))
       );
 
       // Apply global search filter
       const globalMatch = (
-        group.name.toLowerCase().includes(searchLower) ||
-        group.description.toLowerCase().includes(searchLower) ||
-        group.domain.toLowerCase().includes(searchLower) ||
-        group.department.toLowerCase().includes(searchLower) ||
+        (group.groupName && group.groupName.toLowerCase().includes(searchLower)) ||
+        (group.description && group.description.toLowerCase().includes(searchLower)) ||
+        (group.domain && group.domain.toLowerCase().includes(searchLower)) ||
+        (group.department && group.department.toLowerCase().includes(searchLower)) ||
         memberMatch
       );
 
       // Apply specific search filters if active
-      // Updated name search to include group's domain and department tags
       const nameMatch = nameSearchTerm ?
-        group.name.toLowerCase().includes(nameSearchTerm.toLowerCase()) ||
-        group.domain.toLowerCase().includes(nameSearchTerm.toLowerCase()) ||
-        group.department.toLowerCase().includes(nameSearchTerm.toLowerCase())
+        (group.groupName && group.groupName.toLowerCase().includes(nameSearchTerm.toLowerCase())) ||
+        (group.domain && group.domain.toLowerCase().includes(nameSearchTerm.toLowerCase())) ||
+        (group.department && group.department.toLowerCase().includes(nameSearchTerm.toLowerCase()))
         : true;
 
       const membersMatch = membersSearchTerm ?
-        group.members.some((member) =>
-          `${member.firstName} ${member.lastName}`.toLowerCase().includes(membersSearchTerm.toLowerCase()) ||
-          member.domain.toLowerCase().includes(membersSearchTerm.toLowerCase()) ||
-          member.department.toLowerCase().includes(membersSearchTerm.toLowerCase()) ||
-          member.title.toLowerCase().includes(membersSearchTerm.toLowerCase())
+        groupUsers.some((member) =>
+          `${member.firstName || ''} ${member.lastName || ''}`.toLowerCase().includes(membersSearchTerm.toLowerCase()) ||
+          (member.domain && member.domain.toLowerCase().includes(membersSearchTerm.toLowerCase())) ||
+          (member.department && member.department.toLowerCase().includes(membersSearchTerm.toLowerCase())) ||
+          (member.jobTitle && member.jobTitle.toLowerCase().includes(membersSearchTerm.toLowerCase()))
         ) : true;
 
       const descriptionMatch = descriptionSearchTerm ?
-        group.description.toLowerCase().includes(descriptionSearchTerm.toLowerCase()) : true;
+        (group.description && group.description.toLowerCase().includes(descriptionSearchTerm.toLowerCase())) : true;
 
       return globalMatch && nameMatch && membersMatch && descriptionMatch;
     });
@@ -729,7 +738,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
 
   // Handle name sorting and search
   const handleNameSort = () => {
-    requestSort("name");
+    requestSort("groupName");
   };
 
   const handleNameSearchToggle = () => {
@@ -746,7 +755,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
 
   // Handle members sorting and search
   const handleMembersSort = () => {
-    requestSort("members");
+    requestSort("users");
   };
 
   const handleMembersSearchToggle = () => {
@@ -778,9 +787,14 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
     setShowDescriptionSearch(false);
   };
 
-  const handleDeleteGroup = (groupId) => {
-    setGroups(groups.filter((group) => group.id !== groupId));
-    setOpenPopover(null);
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      await deleteGroup(groupId);
+      await loadData(); // Refresh data from server
+      setOpenPopover(null);
+    } catch (error) {
+      console.error("Failed to delete group:", error);
+    }
   };
 
   const handleEditGroup = (groupId) => {
@@ -788,18 +802,15 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
     if (onToggleForm) onToggleForm();
   };
 
-  const handleSaveGroup = (groupData) => {
-    if (groupData.id && groups.find((group) => group.id === groupData.id)) {
-      // Editing existing group
-      setGroups(
-        groups.map((group) => (group.id === groupData.id ? groupData : group))
-      );
-    } else {
-      // Adding new group
-      setGroups([...groups, groupData]);
+  const handleSaveGroup = async (groupData) => {
+    try {
+      // Always reload from database after save to ensure consistency
+      await loadData();
+      setEditingGroup(null);
+      if (onToggleForm) onToggleForm(); // Close the form after saving
+    } catch (error) {
+      console.error("Failed to save group:", error);
     }
-    setEditingGroup(null);
-    if (onToggleForm) onToggleForm(); // Close the form after saving
   };
 
   const handleCancelEdit = () => {
@@ -807,13 +818,39 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
     if (onToggleForm) onToggleForm(); // Close the form when canceling
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading groups...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="flex items-center justify-between">
+          <span>{error}</span>
+          <Button onClick={loadData} variant="outline" size="sm">
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {showAddForm && (
-        <GroupForm onSave={handleSaveGroup} onCancel={handleCancelEdit} />
+        <GroupForm 
+          onSave={handleSaveGroup} 
+          onCancel={handleCancelEdit}
+          availableUsers={users}
+        />
       )}
 
-      <div className="flex items-center">
+      <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -824,6 +861,16 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Button
+          onClick={loadData}
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <div className="rounded-md border border-gray-400">
@@ -888,7 +935,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                       )}
                     </div>
                   </div>
-                  {getSortIcon("name")}
+                  {getSortIcon("groupName")}
                 </div>
               </TableHead>
 
@@ -950,7 +997,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                       )}
                     </div>
                   </div>
-                  {getSortIcon("members")}
+                  {getSortIcon("users")}
                 </div>
               </TableHead>
 
@@ -1028,21 +1075,22 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
               </TableRow>
             ) : (
               sortedAndFilteredGroups().map((group) =>
-                editingGroup === group.id ? (
-                  <TableRow key={group.id}>
+                editingGroup === group._id ? (
+                  <TableRow key={group._id}>
                     <TableCell colSpan={4}>
                       <GroupForm
                         group={group}
                         onSave={handleSaveGroup}
                         onCancel={handleCancelEdit}
+                        availableUsers={users}
                       />
                     </TableCell>
                   </TableRow>
                 ) : (
-                  <TableRow key={group.id}>
+                  <TableRow key={group._id}>
                     <TableCell>
                       <div className="space-y-2">
-                        <div className="font-medium">{group.name}</div>
+                        <div className="font-medium">{group.groupName}</div>
                         <div className="flex flex-wrap gap-1">
                           <Badge variant="domain">{group.domain}</Badge>
                           <Badge variant="department">{group.department}</Badge>
@@ -1051,10 +1099,10 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                     </TableCell>
                     <TableCell>
                       <Popover
-                        open={openMembersPopover === group.id}
+                        open={openMembersPopover === group._id}
                         onOpenChange={(open) => {
                           if (open) {
-                            setOpenMembersPopover(group.id);
+                            setOpenMembersPopover(group._id);
                           } else {
                             setOpenMembersPopover(null);
                           }
@@ -1064,7 +1112,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                           <Button variant="ghost" className="h-auto p-2 hover:bg-white hover:text-black">
                             <div className="flex items-center cursor-pointer">
                               <Users className="h-4 w-4 mr-2" />
-                              <span>{group.members.length}</span>
+                              <span>{(group.users || []).length}</span>
                             </div>
                           </Button>
                         </PopoverTrigger>
@@ -1075,16 +1123,16 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                         >
                           <div className="space-y-3">
                             <div className="font-medium text-black border-b border-gray-200 pb-2">
-                              Group Members ({group.members.length})
+                              Group Members ({(group.users || []).length})
                             </div>
                             <div className="space-y-3 max-h-64 overflow-y-auto">
-                              {group.members.map((member, index) => (
-                                <li key={member.id} className={`text-sm ${index !== 0 ? 'pt-2' : ''} ${index !== group.members.length - 1 ? 'pb-2' : ''}`}>
+                              {getUsersFromIds(group.users || []).map((member, index) => (
+                                <div key={member._id} className={`text-sm ${index !== 0 ? 'pt-2' : ''} ${index !== getUsersFromIds(group.users || []).length - 1 ? 'pb-2' : ''}`}>
                                   <div className="font-medium text-black">
                                     {member.firstName} {member.lastName}
                                   </div>
                                   <div className="text-sm text-gray-600">
-                                    {member.title}
+                                    {member.jobTitle}
                                   </div>
                                   <div className="flex flex-wrap gap-1">
                                     <Badge variant="domain">
@@ -1094,11 +1142,8 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                                       {member.department}
                                     </Badge>
                                   </div>
-                                </li>  // This was the missing closing tag
+                                </div>
                               ))}
-
-
-
                             </div>
                           </div>
                         </PopoverContent>
@@ -1112,17 +1157,17 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                         <Button
                           variant="outline"
                           size="icon"
-                          onClick={() => handleEditGroup(group.id)}
+                          onClick={() => handleEditGroup(group._id)}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="sr-only">Edit</span>
                         </Button>
 
                         <Popover
-                          open={openPopover === group.id}
+                          open={openPopover === group._id}
                           onOpenChange={(open) => {
                             if (open) {
-                              setOpenPopover(group.id);
+                              setOpenPopover(group._id);
                             } else {
                               setOpenPopover(null);
                             }
@@ -1156,7 +1201,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
                                 <Button
                                   variant="destructive"
                                   size="sm"
-                                  onClick={() => handleDeleteGroup(group.id)}
+                                  onClick={() => handleDeleteGroup(group._id)}
                                 >
                                   Delete
                                 </Button>
@@ -1173,7 +1218,7 @@ export function GroupManagementApp({ showAddForm, onToggleForm }) {
           </TableBody>
         </Table>
       </div>
-    </div >
+    </div>
   );
 }
 
