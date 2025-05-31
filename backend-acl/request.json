@@ -24,3 +24,26 @@
   "description": "Group responsible for ",
   "users": ["642c9f1a1a7e3b1234567890", "642c9f1a1a7e3b1234567891"]
 }
+
+
+//POST for /roles
+
+{
+  "domain": "example.com",
+  "department": "IT",
+  "roleName": "Reviewer",
+  "roleTitle": "Document Reviewer",
+  "description": "Responsible for reviewing technical documents.",
+  "documentRepoAccess": {
+    "inReview": {
+      "permission": "read-write",
+      "actions": {
+        "referenceDocumentAccess": "granted",
+        "notify": "email"
+      }
+    },
+    "referenceDocument": "read",
+    "approved": "true",
+    "deactivated": "false"
+  }
+}
