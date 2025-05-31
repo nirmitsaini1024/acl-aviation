@@ -93,7 +93,7 @@ const departmentOptions = {
 const reminderOptions = ["12 hours", "1 day", "3 days", "7 days"];
 
 // API functions
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = "http://localhost:3000/api";
 
 const fetchUsers = async () => {
   try {
