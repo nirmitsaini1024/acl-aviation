@@ -25,6 +25,12 @@ export class Role extends Document {
   @Prop({ type: DocumentRepoAccessSchema, required: true })
   documentRepoAccess: DocumentRepoAccess;
 
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }], default: [] })
+  userIds: MongooseSchema.Types.ObjectId[];
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Group' }], default: [] })
+  groupIds: MongooseSchema.Types.ObjectId[];
+
   // @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'ReviewAdministration', required: true })
   // reviewAdministration: MongooseSchema.Types.ObjectId;
 

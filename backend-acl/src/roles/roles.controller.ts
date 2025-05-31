@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 import { RoleService } from './roles.service';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -56,6 +57,48 @@ export class RolesController {
       return res.status(err.status || 404).json({
         statusCode: err.status || 404,
         message: 'Error: Role not found!',
+        error: err.message,
+      });
+    }
+  }
+
+  @Get(':id/assignments')
+  async getRoleWithAssignments(@Param('id') id: string, @Res() res) {
+    try {
+      const role = await this.roleService.getRoleWithAssignments(id);
+      return res.status(HttpStatus.OK).json({
+        message: 'Role with assignments fetched successfully',
+        role,
+      });
+    } catch (err) {
+      return res.status(err.status || 404).json({
+        statusCode: err.status || 404,
+        message: 'Error: Role with assignments not found!',
+        error: err.message,
+      });
+    }
+  }
+
+  @Post('assign/:id')
+  async assignRole(
+    @Param('id') id: string,
+    @Body() assignRoleDto: AssignRoleDto,
+    @Res() res: Response
+  ) {
+    try {
+      const result = await this.roleService.assignRole(id, assignRoleDto);
+      return res.status(HttpStatus.OK).json({
+        message: result.message,
+        roleId: result.roleId,
+        roleName: result.role,
+        userUpdated: result.userUpdated,
+        groupUpdated: result.groupUpdated,
+        roleUpdated: result.roleUpdated,
+      });
+    } catch (err) {
+      return res.status(err.status || HttpStatus.BAD_REQUEST).json({
+        statusCode: err.status || 400,
+        message: 'Error: Role assignment failed!',
         error: err.message,
       });
     }
