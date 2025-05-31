@@ -13,6 +13,9 @@ export class UsersService {
         return await newUser.save();
     }
 
+    async findByEmail(email: string) {
+        return await this.UserModel.findOne({ email });
+    }
 
     async getAllUsers(){
         const UserData = await this.UserModel.find();
