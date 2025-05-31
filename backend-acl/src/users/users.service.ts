@@ -9,7 +9,11 @@ export class UsersService {
     constructor(@InjectModel('User') private UserModel : Model<User> ) {}
 
     async createUser(createUserDto : CreateUserDto){
-        const newUser =  new this.UserModel(createUserDto);
+        const { tenant_id, ...userData } = createUserDto;
+        const newUser = new this.UserModel({
+            ...userData,
+            tenant_id: tenant_id
+        });
         return await newUser.save();
     }
 

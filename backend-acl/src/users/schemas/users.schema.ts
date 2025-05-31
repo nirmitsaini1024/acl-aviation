@@ -32,6 +32,9 @@ export class User extends Document {
 
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Group' }], default: [], required: true })
   groups: MongooseSchema.Types.ObjectId[];
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Tenant', required: true })
+  tenant_id: MongooseSchema.Types.ObjectId;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

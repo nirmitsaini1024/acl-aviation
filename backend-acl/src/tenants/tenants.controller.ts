@@ -10,11 +10,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CreateTenantDto } from './dto/create-tenant.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantsService } from './tenants.service';
 
 @Controller('tenants')
-@UseGuards(JwtAuthGuard)
 export class TenantsController {
   constructor(private readonly tenantService: TenantsService) {}
 

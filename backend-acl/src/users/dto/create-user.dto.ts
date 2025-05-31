@@ -1,4 +1,5 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from '@nestjs/class-validator';
+import { IsEmail, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString } from '@nestjs/class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateUserDto {
   @IsString()
@@ -33,5 +34,8 @@ export class CreateUserDto {
   @IsNotEmpty()
   reminder: string;
 
-  
+  @Type(() => String)
+  @IsMongoId()
+  @IsNotEmpty()
+  tenant_id: string;
 }
