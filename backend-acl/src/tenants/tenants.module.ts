@@ -7,6 +7,7 @@ import { TenantsService } from './tenants.service';
 @Module({
   imports : [MongooseModule.forFeature([{name : 'Tenant', schema : TenantSchema}])],
   controllers: [TenantsController],
-  providers: [TenantsService]
+  providers: [TenantsService],
+  exports: [TenantsService]
 })
 export class TenantsModule {}

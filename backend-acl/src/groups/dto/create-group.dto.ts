@@ -1,4 +1,5 @@
 import { IsArray, IsNotEmpty, IsString, IsMongoId } from '@nestjs/class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateGroupDto {
   @IsString()
@@ -21,4 +22,9 @@ export class CreateGroupDto {
   @IsMongoId({ each: true })
   @IsNotEmpty()
   users: string[];
+
+  @Type(() => String)
+  @IsMongoId()
+  @IsNotEmpty()
+  tenant_id: string;
 }
