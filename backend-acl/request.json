@@ -47,3 +47,11 @@
     "deactivated": "false"
   }
 }
+
+
+
+// localhost:3000/auth/login POST request
+
+{
+  "email": "john.doe@example.com"
+}
