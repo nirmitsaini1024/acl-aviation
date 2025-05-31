@@ -2,27 +2,29 @@ import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Res } fr
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { RoleService } from './roles.service';
+import { Response } from 'express';
+
 
 @Controller('roles')
 export class RolesController {
-  constructor(private readonly roleService: RoleService) {}
+    constructor(private readonly roleService: RoleService) {}
 
-  @Post()
-  async createRole(@Body() createRoleDto: CreateRoleDto, @Res() res) {
+    @Post()
+    async createRole(@Body() createRoleDto: CreateRoleDto, @Res() res: Response) {
     try {
-      const newRole = await this.roleService.createRole(createRoleDto);
-      return res.status(HttpStatus.CREATED).json({
+        const newRole = await this.roleService.createRole(createRoleDto);
+        return res.status(HttpStatus.CREATED).json({
         message: 'Role has been created successfully',
         newRole,
-      });
+        });
     } catch (err) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
         statusCode: 400,
         message: 'Error: Role not created!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 
   @Get()
   async getAllRoles(@Res() res) {

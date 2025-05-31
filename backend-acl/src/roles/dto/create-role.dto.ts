@@ -27,7 +27,8 @@ export class CreateRoleDto {
   @IsNotEmpty()
   description: string;
 
-  @ValidateNested()
-  @Type(() => DocumentRepoAccessDto)
-  documentRepoAccess: DocumentRepoAccessDto;
+@ValidateNested()
+@Type(() => DocumentRepoAccessDto)
+@IsNotEmpty()
+documentRepoAccess: DocumentRepoAccessDto;
 }

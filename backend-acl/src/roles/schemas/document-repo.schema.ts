@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 
 @Schema()
 export class Actions {
@@ -24,7 +23,7 @@ export class InReview {
 export const InReviewSchema = SchemaFactory.createForClass(InReview);
 
 @Schema()
-export class DocumentRepoAccess extends Document {
+export class DocumentRepoAccess {
   @Prop({ type: InReviewSchema, required: true })
   inReview: InReview;
 

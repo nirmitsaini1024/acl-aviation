@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
+import { DocumentRepoAccess, DocumentRepoAccessSchema } from './document-repo.schema';
 
 @Schema()
 export class Role extends Document {
@@ -21,8 +22,8 @@ export class Role extends Document {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'DocumentRepoAccess', required: true })
-  documentRepoAccess: MongooseSchema.Types.ObjectId;
+  @Prop({ type: DocumentRepoAccessSchema, required: true })
+  documentRepoAccess: DocumentRepoAccess;
 
   // @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'ReviewAdministration', required: true })
   // reviewAdministration: MongooseSchema.Types.ObjectId;
