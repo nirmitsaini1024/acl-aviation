@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Res, UseGuards, Headers } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { AssignRoleDto } from './dto/assign-role.dto';
@@ -28,116 +28,117 @@ export class RolesController {
     }
     }
 
-  @Get()
-  async getAllRoles(@Res() res) {
-    try {
-      const roleData = await this.roleService.getAllRoles();
-      return res.status(HttpStatus.OK).json({
-        message: 'All roles fetched successfully',
-        roleData,
-      });
-    } catch (err) {
-      return res.status(err.status || 500).json({
-        statusCode: err.status || 500,
-        message: 'Error: Cannot fetch roles!',
-        error: err.message,
-      });
+    @Get()
+    async getAllRoles(@Res() res: Response, @Headers() headers: any) {
+        try {
+            const roleData = await this.roleService.getAllRoles();
+            return res.status(HttpStatus.OK).json({
+                message: 'All roles fetched successfully',
+                roleData,
+            });
+        } catch (err) {
+            console.error('Error fetching roles:', err);
+            return res.status(err.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
+                statusCode: err.status || HttpStatus.INTERNAL_SERVER_ERROR,
+                message: 'Error: Cannot fetch roles!',
+                error: err.message,
+            });
+        }
     }
-  }
 
-  @Get(':id')
-  async getRoleById(@Param('id') id: string, @Res() res) {
+    @Get(':id')
+    async getRoleById(@Param('id') id: string, @Res() res) {
     try {
-      const role = await this.roleService.getRoleById(id);
-      return res.status(HttpStatus.OK).json({
+        const role = await this.roleService.getRoleById(id);
+        return res.status(HttpStatus.OK).json({
         message: 'Role fetched successfully',
         role,
-      });
+        });
     } catch (err) {
-      return res.status(err.status || 404).json({
+        return res.status(err.status || 404).json({
         statusCode: err.status || 404,
         message: 'Error: Role not found!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 
-  @Get(':id/assignments')
-  async getRoleWithAssignments(@Param('id') id: string, @Res() res) {
+    @Get(':id/assignments')
+    async getRoleWithAssignments(@Param('id') id: string, @Res() res) {
     try {
-      const role = await this.roleService.getRoleWithAssignments(id);
-      return res.status(HttpStatus.OK).json({
+        const role = await this.roleService.getRoleWithAssignments(id);
+        return res.status(HttpStatus.OK).json({
         message: 'Role with assignments fetched successfully',
         role,
-      });
+        });
     } catch (err) {
-      return res.status(err.status || 404).json({
+        return res.status(err.status || 404).json({
         statusCode: err.status || 404,
         message: 'Error: Role with assignments not found!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 
-  @Post('assign/:id')
-  async assignRole(
+    @Post('assign/:id')
+    async assignRole(
     @Param('id') id: string,
     @Body() assignRoleDto: AssignRoleDto,
     @Res() res: Response
-  ) {
+    ) {
     try {
-      const result = await this.roleService.assignRole(id, assignRoleDto);
-      return res.status(HttpStatus.OK).json({
+        const result = await this.roleService.assignRole(id, assignRoleDto);
+        return res.status(HttpStatus.OK).json({
         message: result.message,
         roleId: result.roleId,
         roleName: result.role,
         userUpdated: result.userUpdated,
         groupUpdated: result.groupUpdated,
         roleUpdated: result.roleUpdated,
-      });
+        });
     } catch (err) {
-      return res.status(err.status || HttpStatus.BAD_REQUEST).json({
+        return res.status(err.status || HttpStatus.BAD_REQUEST).json({
         statusCode: err.status || 400,
         message: 'Error: Role assignment failed!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 
-  @Patch(':id')
-  async updateRole(
+    @Patch(':id')
+    async updateRole(
     @Param('id') id: string,
     @Body() updateRoleDto: UpdateRoleDto,
     @Res() res,
-  ) {
+    ) {
     try {
-      const updatedRole = await this.roleService.updateRole(id, updateRoleDto);
-      return res.status(HttpStatus.OK).json({
+        const updatedRole = await this.roleService.updateRole(id, updateRoleDto);
+        return res.status(HttpStatus.OK).json({
         message: 'Role updated successfully',
         updatedRole,
-      });
+        });
     } catch (err) {
-      return res.status(HttpStatus.BAD_REQUEST).json({
+        return res.status(HttpStatus.BAD_REQUEST).json({
         statusCode: 400,
         message: 'Error: Role not updated!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 
-  @Delete(':id')
-  async deleteRole(@Param('id') id: string, @Res() res) {
+    @Delete(':id')
+    async deleteRole(@Param('id') id: string, @Res() res) {
     try {
-      await this.roleService.deleteRole(id);
-      return res.status(HttpStatus.OK).json({
+        await this.roleService.deleteRole(id);
+        return res.status(HttpStatus.OK).json({
         message: 'Role deleted successfully',
-      });
+        });
     } catch (err) {
-      return res.status(err.status || 400).json({
+        return res.status(err.status || 400).json({
         statusCode: err.status || 400,
         message: 'Error: Role not deleted!',
         error: err.message,
-      });
+        });
     }
-  }
+    }
 }

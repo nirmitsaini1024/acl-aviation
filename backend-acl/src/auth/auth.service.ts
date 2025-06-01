@@ -9,19 +9,40 @@ export class AuthService {
     private usersService: UsersService,
   ) {}
 
-  async generateToken(email: string) {
-    // Check if user exists
+  async validateUser(email: string): Promise<any> {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Invalid credentials');
     }
+    return user;
+  }
 
-    const payload = {
-      email: user.email,
-      userId: user._id
-    };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
+  async generateToken(email: string) {
+    try {
+      const user = await this.validateUser(email);
+      
+      const payload = {
+        email: user.email,
+        userId: user._id
+      };
+
+      const token = this.jwtService.sign(payload);
+      
+      return {
+        access_token: token,
+        token_type: 'Bearer',
+        expires_in: '1d'
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Failed to generate token');
+    }
+  }
+
+  async verifyToken(token: string) {
+    try {
+      return this.jwtService.verify(token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 }

@@ -66,9 +66,11 @@ export const getTenantId = async () => {
 
 // Function to get auth headers with tenant_id
 export const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : '',
   };
 };
 

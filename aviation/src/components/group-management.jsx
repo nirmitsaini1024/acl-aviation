@@ -107,7 +107,7 @@ const fetchGroups = async () => {
     }
     const data = await response.json();
     console.log('Fetched groups:', data);
-    return data.GroupData || data || [];
+    return data.groupData || data || [];
   } catch (error) {
     console.error("Error fetching groups:", error);
     throw error;

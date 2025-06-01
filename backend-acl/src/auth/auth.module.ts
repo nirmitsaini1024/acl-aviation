@@ -5,18 +5,19 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { jwtConstants } from './auth.config';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: 'your-secret-key', // In production, use environment variable
-      signOptions: { expiresIn: '1d' },
+      secret: jwtConstants.secret,
+      signOptions: { expiresIn: jwtConstants.expiresIn },
     }),
     UsersModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

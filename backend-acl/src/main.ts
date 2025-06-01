@@ -5,7 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend on localhost:5173
+  // Enable CORS for frontend
   app.enableCors({
     origin: [
       'http://localhost:5173',
@@ -16,9 +16,18 @@ async function bootstrap() {
       'Content-Type', 
       'Authorization', 
       'X-Requested-With',
-      'Accept'
+      'Accept',
+      'Accept-Encoding',
+      'Accept-Language',
+      'Connection',
+      'Origin',
+      'Host',
+      'User-Agent'
     ],
+    exposedHeaders: ['Authorization'],
     credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   });
 
   app.useGlobalPipes(

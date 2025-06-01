@@ -160,11 +160,21 @@ function Badge({ children, variant = "default" }) {
 
 // API functions
 const fetchRoles = async () => {
-  const response = await fetch('http://localhost:3000/roles', {
-    headers: getAuthHeaders()
-  });
-  if (!response.ok) throw new Error('Failed to fetch roles');
-  return response.json();
+  try {
+    console.log('Fetching roles from API...');
+    const response = await fetch('http://localhost:3000/roles', {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Fetched roles:', data);
+    return data.roleData || data || [];
+  } catch (error) {
+    console.error("Error fetching roles:", error);
+    throw error;
+  }
 };
 
 const createRole = async (roleData) => {
