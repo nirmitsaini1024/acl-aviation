@@ -23,7 +23,7 @@ import UserRolesPage from './pages/admin-dashboard/access-control/assign-user';
 import DocumentRoleAssignmentPage from './pages/admin-dashboard/access-control/assign-docs';
 import GroupsPage from './pages/admin-dashboard/onboarding/group';
 import DepartmentsPage from './pages/admin-dashboard/onboarding/department';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DocReviewManagementCenter from './pages/dashboard/doc-review-management-center';
 import ReviewRelated from './pages/dashboard/review-related-content';
 import StepperApp from './pages/dashboard/StepperApp';
@@ -35,12 +35,20 @@ import PersonalPage from './pages/dashboard/personal-page';
 import MyActivitiesLog from './pages/dashboard/my-activities';
 
 function App() {
-  const [user, setUser] = useState({
-    name: 'John Doe',
-    profilePic: '/profile.avif',
-    sig: '/sig-2.png'
+  const [user, setUser] = useState(() => {
+    // Try to get user from localStorage on initial load
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : {
+      name: 'John Doe',
+      profilePic: '/profile.avif',
+      sig: '/sig-2.png'
+    };
   });
-  console.log(user);
+
+  // Save user to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('user', JSON.stringify(user));
+  }, [user]);
 
   const [isBotOpen, setIsBotOpen] = useState(false);
   return (
@@ -49,7 +57,7 @@ function App() {
         {/* Auth pages (without sidebar) */}
         <Route path="/" element={<LoginPage setUser={setUser}/>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/refdoc" element={<RefDocPage />} />
+        <Route path="/refdoc" element={<RefDocPage />} />
         
         {/* Protected routes with sidebar */}
         <Route element={<AppLayout user={user} isBotOpen={isBotOpen} setIsBotOpen={setIsBotOpen}/>}>
