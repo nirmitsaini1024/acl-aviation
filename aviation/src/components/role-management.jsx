@@ -165,6 +165,11 @@ const fetchRoles = async () => {
     const response = await fetch('http://localhost:3000/roles', {
       headers: getAuthHeaders()
     });
+    if (response.status === 404) {
+      // If no roles exist, return empty array instead of throwing error
+      console.log('No roles found, returning empty array');
+      return [];
+    }
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -173,7 +178,8 @@ const fetchRoles = async () => {
     return data.roleData || data || [];
   } catch (error) {
     console.error("Error fetching roles:", error);
-    throw error;
+    // Return empty array on error instead of throwing
+    return [];
   }
 };
 
