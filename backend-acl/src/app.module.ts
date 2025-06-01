@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AbilityModule } from './ability/ability.module';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { MongooseModule } from '@nestjs/mongoose';
         uri: configService.get<string>('DB_URL'),
       }),
     }),
-    RolesModule, UsersModule, GroupsModule, PermissionsModule, AuthModule, TenantsModule
+    RolesModule, UsersModule, GroupsModule, PermissionsModule, AuthModule, TenantsModule, AbilityModule
   ],
   controllers: [AppController],
   providers: [AppService],
