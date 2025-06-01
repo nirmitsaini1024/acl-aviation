@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, Schema as MongooseSchema } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './schemas/users.schema';
 import { TenantsService } from '../tenants/tenants.service';
@@ -40,5 +40,24 @@ export class UsersService {
             throw new NotFoundException('Users not found!');
         }
         return UserData;
+    }
+
+    async addGroupToUser(userId: string, groupId: MongooseSchema.Types.ObjectId) {
+        try {
+            const user = await this.UserModel.findById(userId);
+            if (!user) {
+                throw new NotFoundException('User not found');
+            }
+            
+            // Add group to user's groups array if not already present
+            if (!user.groups.includes(groupId)) {
+                user.groups.push(groupId);
+                await user.save();
+            }
+            
+            return user;
+        } catch (error) {
+            throw new Error(`Error adding group to user: ${error.message}`);
+        }
     }
 }
