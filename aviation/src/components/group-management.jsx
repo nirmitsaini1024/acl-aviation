@@ -36,6 +36,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { getAuthHeaders, getTenantId } from "@/utils/auth";
 
 // Table components with grid borders added
 const Table = ({ children, className = "" }) => (
@@ -98,14 +99,14 @@ const API_BASE_URL = "http://localhost:3000";
 const fetchGroups = async () => {
   try {
     console.log('Fetching groups from API...');
-    const response = await fetch(`${API_BASE_URL}/groups`);
+    const response = await fetch(`${API_BASE_URL}/groups`, {
+      headers: getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     console.log('Fetched groups:', data);
-    
-    // Extract the GroupData array from the response (similar to users structure)
     return data.GroupData || data || [];
   } catch (error) {
     console.error("Error fetching groups:", error);
@@ -116,14 +117,14 @@ const fetchGroups = async () => {
 const fetchUsers = async () => {
   try {
     console.log('Fetching users from API...');
-    const response = await fetch(`${API_BASE_URL}/users`);
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      headers: getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     console.log('Fetched users:', data);
-    
-    // Extract the UserData array from the response
     return data.UserData || data || [];
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -132,58 +133,42 @@ const fetchUsers = async () => {
 };
 
 const createGroup = async (groupData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(groupData),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error creating group:", error);
-    throw error;
+  const tenant_id = getTenantId();
+  const response = await fetch(`${API_BASE_URL}/groups`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...groupData, tenant_id }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+  const data = await response.json();
+  return data;
 };
 
 const updateGroup = async (groupId, groupData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(groupData),
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error updating group:", error);
-    throw error;
+  const tenant_id = getTenantId();
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...groupData, tenant_id }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+  const data = await response.json();
+  return data;
 };
 
 const deleteGroup = async (groupId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return true;
-  } catch (error) {
-    console.error("Error deleting group:", error);
-    throw error;
+  const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
+  return true;
 };
 
 // Badge Component

@@ -27,24 +27,24 @@
 
 
 //POST for /roles
-
 {
-  "domain": "example.com",
-  "department": "IT",
-  "roleName": "Reviewer",
-  "roleTitle": "Document Reviewer",
-  "description": "Responsible for reviewing technical documents.",
+  "domain": "Technology",
+  "department": "Software Development",
+  "roleName": "Senior Developer",
+  "middlename": "Lead",
+  "roleTitle": "Senior Software Developer",
+  "description": "Responsible for leading development teams and architectural decisions",
   "documentRepoAccess": {
     "inReview": {
       "permission": "read-write",
       "actions": {
-        "referenceDocumentAccess": "granted",
-        "notify": "email"
+        "referenceDocumentAccess": "full",
+        "notify": "immediate"
       }
     },
-    "referenceDocument": "read",
-    "approved": "true",
-    "deactivated": "false"
+    "referenceDocument": "read-only",
+    "approved": "read-write",
+    "deactivated": "no-access"
   }
 }
 

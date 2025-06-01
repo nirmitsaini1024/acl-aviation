@@ -269,7 +269,7 @@ export default function Sidebar({ collapsed, setCollapsed, user }) {
 
   // Combine menu items based on admin prop
   const menuStructure =
-    user?.name == "admin"
+    user?.role === "admin"
       ? [...mainMenuItems, ...adminMenuItems]
       : [...mainMenuItems];
 

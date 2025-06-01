@@ -30,6 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getAuthHeaders, getTenantId } from "@/utils/auth";
 
 // Table components (inline definitions)
 const Table = ({ children, className = "" }) => (
@@ -158,79 +159,43 @@ function Badge({ children, variant = "default" }) {
 }
 
 // API functions
-const roleAPI = {
-  async getRoles() {
-    try {
-      console.log('Fetching roles from:', 'http://localhost:3000/roles');
-      const response = await fetch('http://localhost:3000/roles');
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
+const fetchRoles = async () => {
+  const response = await fetch('http://localhost:3000/roles', {
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to fetch roles');
+  return response.json();
+};
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+const createRole = async (roleData) => {
+  const tenant_id = getTenantId();
+  const response = await fetch('http://localhost:3000/roles', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...roleData, tenant_id })
+  });
+  if (!response.ok) throw new Error('Failed to create role');
+  return response.json();
+};
 
-      const data = await response.json();
-      console.log('Raw API response:', data);
-      return data;
-    } catch (error) {
-      console.error('Error fetching roles:', error);
-      throw error;
-    }
-  },
+const updateRole = async (id, roleData) => {
+  const tenant_id = getTenantId();
+  const response = await fetch(`http://localhost:3000/roles/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...roleData, tenant_id })
+  });
+  if (!response.ok) throw new Error('Failed to update role');
+  return response.json();
+};
 
-  async createRole(roleData) {
-    try {
-      const response = await fetch('http://localhost:3000/roles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(roleData),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create role');
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating role:', error);
-      throw error;
-    }
-  },
-
-  async updateRole(roleId, roleData) {
-    try {
-      const response = await fetch(`http://localhost:3000/roles/${roleId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(roleData),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update role');
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating role:', error);
-      throw error;
-    }
-  },
-
-  async deleteRole(roleId) {
-    try {
-      const response = await fetch(`http://localhost:3000/roles/${roleId}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete role');
-      }
-      return true;
-    } catch (error) {
-      console.error('Error deleting role:', error);
-      throw error;
-    }
-  }
+const deleteRole = async (id) => {
+  const response = await fetch(`http://localhost:3000/roles/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  if (!response.ok) throw new Error('Failed to delete role');
+  return response.json();
 };
 
 // Access Control Viewer Component
@@ -762,7 +727,7 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
       setError(null);
       console.log('Starting to load roles...');
 
-      const rolesData = await roleAPI.getRoles();
+      const rolesData = await fetchRoles();
       console.log('Received roles data:', rolesData);
 
       // Ensure we always have an array
@@ -813,7 +778,7 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
 
   const handleDeleteRole = async (roleId) => {
     try {
-      await roleAPI.deleteRole(roleId);
+      await deleteRole(roleId);
       setRoles(safeRoles.filter((role) => (role._id || role.id) !== roleId));
       setOpenPopover(null);
     } catch (err) {
@@ -832,11 +797,11 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
       if (editingRole) {
         // Update existing role
         const roleId = editingRole._id || editingRole.id;
-        const updatedRole = await roleAPI.updateRole(roleId, roleData);
+        const updatedRole = await updateRole(roleId, roleData);
         setRoles(safeRoles.map((role) => ((role._id || role.id) === roleId ? updatedRole : role)));
       } else {
         // Create new role
-        const newRole = await roleAPI.createRole(roleData);
+        const newRole = await createRole(roleData);
         setRoles([...safeRoles, newRole]);
       }
       setEditingRole(null);

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { decodeToken, getCurrentUser } from "@/utils/jwt"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,9 +13,10 @@ export function LoginForm({setUser}) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   })
+  const [error, setError] = useState('')
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -23,30 +25,41 @@ export function LoginForm({setUser}) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     setIsLoading(true)
 
-    // Simulate API call
     try {
-      // In a real application, you would make an API call to authenticate the user
-      if(formData.username == "admin" && formData.password=="admin"){
-        setUser((prev) => ({...prev, name: "admin"}));
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email: formData.email }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Login failed')
       }
-      else if(formData.username == "user1"){
-        setUser("user1");
+
+      const data = await response.json()
+      
+      // Set user data based on email
+      const userData = {
+        email: formData.email,
+        role: formData.email.includes('admin') ? 'admin' : 'user'
       }
-      else if(formData.username == "user2"){
-        setUser("user2");
+      
+      setUser(userData)
+      
+      // Navigate based on role
+      if (userData.role === 'admin') {
+        navigate('/admin-dashboard')
+      } else {
+        navigate('/landing-page')
       }
-      else if(formData.username == "user3"){
-        setUser("user3");
-      }
-      else{
-        setUser((prev) => ({...prev, name: "John Doe", email: "user@gmail.com"}));
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      navigate("/landing-page")
-    } catch (error) {
-      console.error("Login failed:", error)
+    } catch (err) {
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -56,18 +69,19 @@ export function LoginForm({setUser}) {
     <Card>
       <CardHeader className="space-y-1">
         <h2 className="text-2xl font-semibold">Login</h2>
-        <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
+        <p className="text-sm text-muted-foreground">Enter your email to access your account</p>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
-              name="username"
-              placeholder="Enter your username"
+              id="email"
+              name="email"
+              type="email"
+              placeholder="Enter your email"
               required
-              value={formData.username}
+              value={formData.email}
               onChange={handleChange}
             />
           </div>

@@ -95,19 +95,31 @@ const reminderOptions = ["12 hours", "1 day", "3 days", "7 days"];
 // API functions
 const API_BASE_URL = "http://localhost:3000";
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    "Content-Type": "application/json",
+    "Authorization": token ? `Bearer ${token}` : '',
+  };
+};
+
+const getTenantId = () => {
+  // Implement the logic to get tenant_id
+  return "default_tenant_id"; // Placeholder, actual implementation needed
+};
+
 const fetchUsers = async () => {
   try {
     console.log('Fetching users from API...');
-    const response = await fetch(`${API_BASE_URL}/users`);
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      headers: getAuthHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     console.log('Fetched users:', data);
-    
-    // Extract the UserData array from the response
-    // Your API returns: { message: "...", UserData: [...] }
-    // We need just the UserData array
     return data.UserData || data || [];
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -116,13 +128,12 @@ const fetchUsers = async () => {
 };
 
 const createUser = async (userData) => {
+  const tenant_id = getTenantId();
   try {
     const response = await fetch(`${API_BASE_URL}/users`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...userData, tenant_id }),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -136,13 +147,12 @@ const createUser = async (userData) => {
 };
 
 const updateUser = async (userId, userData) => {
+  const tenant_id = getTenantId();
   try {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ ...userData, tenant_id }),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -156,9 +166,11 @@ const updateUser = async (userId, userData) => {
 };
 
 const deleteUser = async (userId) => {
+  const tenant_id = getTenantId();
   try {
     const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
       method: "DELETE",
+      headers: getAuthHeaders(),
     });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
