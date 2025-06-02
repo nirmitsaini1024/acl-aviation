@@ -39,10 +39,11 @@ export class GroupsService {
     }
     
     async getAllGroups() {
-        const GroupData = await this.GroupModel.find();
-        if (!GroupData || GroupData.length == 0) {
-            throw new NotFoundException('Group not found!');
-        }
-        return GroupData;
+        const GroupData = await this.GroupModel.find()
+            .populate('users', 'firstName lastName email')
+            .populate('roles', 'roleName description')
+            .populate('tenant_id', 'name');
+        
+        return GroupData || [];
     }
 }

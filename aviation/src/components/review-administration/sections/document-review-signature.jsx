@@ -21,6 +21,9 @@ import {
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { KanbanContainer } from "@/components/doc-review-management-center/kanban-board";
 import { Label } from "@/components/ui/label";
+import { Can } from "./Can"; // Import the Can component
+import { useAbility } from '@casl/react';
+import { AbilityContext } from './Can';
 
 export const DocumentSignature = () => {
   const {
@@ -34,16 +37,14 @@ export const DocumentSignature = () => {
     handleConfirm,
     handleDragEnd,
     isSubmitted,
-    domain, 
+    domain,
     setDomain
   } = useContext(DocumentContext);
 
   const [selectedWorkingGroup, setSelectedWorkingGroup] = useState("");
-  //   const [domain, setDomain] = useState("")
-  // const [department, setDepartment] = useState("")
-  // const [category, setCategory] = useState("");
+  const ability = useAbility(AbilityContext); // Get ability instance
 
-   const domains = ["Airport", "Airline"];
+  const domains = ["Airport", "Airline"];
 
   const departments = [
     "Airport Security",
@@ -57,6 +58,7 @@ export const DocumentSignature = () => {
     "Airport": ["TSA", "FAA", "Airport Security", "Airport Operations", "Public Safety"],
     "Airline": ["Airline Security", "Airline Operations"]
   }
+
   const categories = ["ASP", "AEP", "ACM", "SMS", "ADFAP(Airport), ADFP"];
   const workingGroups = [
     "ASP Working Group",
@@ -64,6 +66,7 @@ export const DocumentSignature = () => {
     "Airline Security Group",
     "Terminal Working Group",
   ];
+
   const categoryOptions = {
     "Airport": ["ASP", "AEP", "ACM", "SMS", "ADFAP (Airport)"],
     "Airline": ["ASP", "ADFP"]
@@ -79,6 +82,17 @@ export const DocumentSignature = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Determine what user can see
+  const canSelectDomain = ability.can('select', 'Domain');
+  const canSelectDepartment = ability.can('select', 'Department');
+  const canSelectCategory = ability.can('select', 'Category');
+
+  // Calculate grid columns based on what's visible
+  const visibleFields = [canSelectDomain, canSelectDepartment, canSelectCategory].filter(Boolean).length;
+  const gridCols = visibleFields === 1 ? 'grid-cols-1' :
+    visibleFields === 2 ? 'grid-cols-1 md:grid-cols-2' :
+      'grid-cols-1 md:grid-cols-3';
 
   return (
     <div className="space-y-8">
@@ -114,64 +128,82 @@ export const DocumentSignature = () => {
           </p>
 
           {/* Department and Category Selection */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="domain">Domain</Label>
-              <Select value={domain} onValueChange={setDomain} required>
-                <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
-                  <SelectValue placeholder="Select Domain" />
-                </SelectTrigger>
-                <SelectContent>
-                  {domains.map((domainOption) => (
-                    <SelectItem key={domainOption} value={domainOption}>
-                      {domainOption}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className={`grid gap-4 ${gridCols}`}>
 
-            <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select
-                value={selectedDepartment}
-                onValueChange={setSelectedDepartment}
-                required
-                disabled={!domain}
-              >
-                <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
-                  <SelectValue placeholder={domain ? "Select Department" : "Select Domain first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {domain && departmentOptions[domain].map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Domain Selection - Only show for normal users */}
+            <Can I="select" a="Domain">
+              <div className="space-y-2">
+                <Label htmlFor="domain">Domain</Label>
+                <Select value={domain} onValueChange={setDomain} required>
+                  <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
+                    <SelectValue placeholder="Select Domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {domains.map((domainOption) => (
+                      <SelectItem key={domainOption} value={domainOption}>
+                        {domainOption}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Can>
 
-            <div className="space-y-2">
-              <Label htmlFor="category">Document Category</Label>
-              <Select
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
-                required
-                disabled={!domain}
-              >
-                <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
-                  <SelectValue placeholder={domain ? "Select Category" : "Select Domain first"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {domain && categoryOptions[domain].map((categoryOption) => (
-                    <SelectItem key={categoryOption} value={categoryOption}>
-                      {categoryOption}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Department Selection - Show for normal users and managers */}
+            <Can I="select" a="Department">
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select
+                  value={selectedDepartment}
+                  onValueChange={setSelectedDepartment}
+                  required
+                  disabled={canSelectDomain && !domain} // Only disable if domain selection is visible and not selected
+                >
+                  <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
+                    <SelectValue placeholder={
+                      canSelectDomain && !domain
+                        ? "Select Domain first"
+                        : "Select Department"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(canSelectDomain && domain ? departmentOptions[domain] : departments).map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Can>
+
+            {/* Category Selection - Only show for normal users */}
+            <Can I="select" a="Category">
+              <div className="space-y-2">
+                <Label htmlFor="category">Document Category</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={setSelectedCategory}
+                  required
+                  disabled={canSelectDomain && !domain} // Only disable if domain selection is visible and not selected
+                >
+                  <SelectTrigger className="border-blue-100 w-full focus:border-blue-300">
+                    <SelectValue placeholder={
+                      canSelectDomain && !domain
+                        ? "Select Domain first"
+                        : "Select Category"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(canSelectDomain && domain ? categoryOptions[domain] : categories).map((categoryOption) => (
+                      <SelectItem key={categoryOption} value={categoryOption}>
+                        {categoryOption}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </Can>
           </div>
         </div>
       </div>
@@ -289,8 +321,8 @@ export const DocumentSignature = () => {
           className="bg-green-600 hover:bg-green-700 flex items-center gap-2 px-8 py-3 text-white font-medium rounded-md shadow-md transition-all transform hover:scale-105"
           disabled={
             !signature ||
-            !selectedDepartment ||
-            !selectedCategory ||
+            (!canSelectDepartment || !selectedDepartment) ||
+            (!canSelectCategory || selectedCategory) ||
             reviewDocs.length === 0 ||
             isSubmitted ||
             !selectedWorkingGroup

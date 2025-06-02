@@ -12,13 +12,18 @@ export class AuthController {
     const token = await this.authService.generateToken(loginDto.email);
     
     // Set the token in an HTTP-only cookie
-    res.cookie('jwt', token, {
+    res.cookie('jwt', token.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
       sameSite: 'strict',
       maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
     });
 
-    return res.json({ message: 'Login successful' });
+    return res.json({
+      message: 'Login successful',
+      access_token: token.access_token,
+      token_type: token.token_type,
+      expires_in: token.expires_in
+    });
   }
 }

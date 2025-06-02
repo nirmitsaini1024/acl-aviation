@@ -44,6 +44,11 @@ export function LoginForm({setUser}) {
 
       const data = await response.json()
       
+      // Store the JWT token
+      if (data.access_token) {
+        localStorage.setItem('token', data.access_token);
+      }
+      
       // Set user data based on email
       const userData = {
         email: formData.email,

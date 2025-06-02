@@ -11,6 +11,10 @@ import DocumentApprovedTable from "@/components/review-administration/documentap
 import DeactivatedDocumentsTable from "@/components/review-administration/documentrejectedtable";
 import { ArrowBigLeft, ChevronLeft, CircleArrowLeft } from "lucide-react";
 
+// ✅ CORRECT imports for StepperApp
+import { Can, AbilityContext } from "@/components/review-administration/sections/Can";
+import { useAbility } from '@casl/react'; // ✅ useAbility comes from @casl/react
+
 const contentVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -32,33 +36,56 @@ const contentVariants = {
 };
 
 function StepperApp({setIsBotOpen}) {
-  const [activeStep, setActiveStep] = useState(3);
+  const [activeStep, setActiveStep] = useState(null); // Changed from 3 to null
   const [showUploadSection, setShowUploadSection] = useState(false);
 
-  const steps = [
-    { number: 1, title: "Upload" },
-    { number: 2, title: "Review Management" },
-    { number: 3, title: "Start Review Process" },
-  ];
+  // Add CASL ability hook
+  const ability = useAbility(AbilityContext);
+
+  // Define steps based on user permissions
+  const getAvailableSteps = () => {
+    // Only show Review Management if user can edit documents
+    if (ability.can('edit', 'Document')) {
+      return [
+        { number: 1, title: "Upload" },
+        { number: 2, title: "Review Management" },
+        { number: 3, title: "Start Review Process" },
+      ];
+    }
+
+    // For users who can't edit, skip Review Management
+    return [
+      { number: 1, title: "Upload" },
+      { number: 3, title: "Start Review Process" },
+    ];
+  };
+
+  const steps = getAvailableSteps();
 
   // Handle step click in the stepper
   const handleStepClick = (index) => {
-    // If clicking on the Upload step (index 0) that's already active
-    if (index === 0 && activeStep === 0) {
-      // Toggle the upload section visibility
-      showUploadSection === true ? setActiveStep(3) : setActiveStep(0);
-      setShowUploadSection(!showUploadSection);
-    }
-    // Otherwise, set the active step normally
-    else {
-      setActiveStep(index);
-
-      // Only show upload section when Upload step is explicitly clicked
-      if (index === 0) {
-        setShowUploadSection(true);
+    const availableSteps = getAvailableSteps();
+    const clickedStep = availableSteps[index];
+    
+    if (!clickedStep) return;
+    
+    const stepNumber = clickedStep.number;
+    
+    // If clicking on the Upload step (number 1)
+    if (stepNumber === 1) {
+      if (activeStep === 1) {
+        // If already on step 1, toggle the upload section visibility
+        setShowUploadSection(!showUploadSection);
       } else {
-        setShowUploadSection(false);
+        // If not on step 1, go to step 1 and show upload section
+        setActiveStep(1);
+        setShowUploadSection(true);
       }
+    }
+    // For other steps, just set the active step normally
+    else {
+      setActiveStep(stepNumber);
+      setShowUploadSection(false);
     }
   };
 
@@ -67,43 +94,115 @@ function StepperApp({setIsBotOpen}) {
     setShowUploadSection(false);
   }, []);
 
-    const handleDocumentStore = () => {
-    setActiveStep(3);
+  const handleDocumentStore = () => {
+    setActiveStep(null); // Changed from 3 to null to close all steps
     setShowUploadSection(false);
+  };
+
+  // Component to render tabs with role-based permissions
+  const RoleBasedTabs = () => {
+    return (
+      <Tabs defaultValue="pending" className="w-full">
+        <TabsList className="mb-4 bg-blue-50 w-full">
+          {/* Pending Tab - Always visible */}
+          <Can I="view" a="PendingTab">
+            <TabsTrigger
+              value="pending"
+              className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+            >
+              Pending
+            </TabsTrigger>
+          </Can>
+          
+          {/* Approved Tab - Admin and Manager only */}
+          <Can I="view" a="ApprovedTab">
+            <TabsTrigger
+              value="approved"
+              className="flex-1 data-[state=active]:bg-green-600 data-[state=active]:text-white"
+            >
+              Approved
+            </TabsTrigger>
+          </Can>
+          
+          {/* Deactivated Tab - Admin only */}
+          <Can I="view" a="DeactivatedTab">
+            <TabsTrigger
+              value="disapproved"
+              className="flex-1 data-[state=active]:bg-red-400 data-[state=active]:text-white"
+            >
+              Deactivated
+            </TabsTrigger>
+          </Can>
+          
+          {/* Reference Documents Tab - All roles can see */}
+          <Can I="view" a="ReferenceTab">
+            <TabsTrigger
+              value="refdoc"
+              className="flex-1 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
+            >
+              Reference Documents
+            </TabsTrigger>
+          </Can>
+        </TabsList>
+
+        {/* Tab Contents */}
+        <Can I="view" a="PendingTab">
+          <TabsContent value="pending">
+            <DocumentReviewTable setActiveStep={setActiveStep} status="pending" setIsBotOpen={setIsBotOpen}/>
+          </TabsContent>
+        </Can>
+
+        <Can I="view" a="ApprovedTab">
+          <TabsContent value="approved">
+            <DocumentApprovedTable setIsBotOpen={setIsBotOpen}/>
+          </TabsContent>
+        </Can>
+
+        <Can I="view" a="DeactivatedTab">
+          <TabsContent value="disapproved">
+            <DeactivatedDocumentsTable/>
+          </TabsContent>
+        </Can>
+        
+        <Can I="view" a="ReferenceTab">
+          <TabsContent value="refdoc">
+            <DocumentReviewTable setActiveStep={setActiveStep} status="reference" setIsBotOpen={setIsBotOpen}/>
+          </TabsContent>
+        </Can>
+      </Tabs>
+    );
   };
 
   return (
     <DocumentProvider>
       <div className="container mx-auto p-6">
-        <div className="space-y-10   px-6">
+        <div className="space-y-10 px-6">
           <Stepper
             steps={steps}
             activeStep={activeStep}
             onStepClick={handleStepClick}
-            />
-        
+          />
 
           <button
-           onClick={handleDocumentStore}
-            className={`flex border-none font-semibold transition-all ease-in-out duration-300 hover:cursor-pointer px-5 py-2 rounded-md`}
+            onClick={handleDocumentStore}
+            className="flex border-none font-semibold transition-all ease-in-out duration-300 hover:cursor-pointer px-5 py-2 rounded-md"
           >
-           <CircleArrowLeft />
+            <CircleArrowLeft />
           </button>
-
         </div>
 
         <div className="bg-white rounded-lg shadow-soft px-6 py-8 md:py-6 md:px-6 min-h-[300px]">
           <AnimatePresence mode="wait">
             <motion.div
-              key={`content-${activeStep}`}
+              key={`content-${activeStep || 'none'}`}
               variants={contentVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
             >
-              {activeStep === 0 && (
-                <>
-                  {/* When Upload step is clicked, show upload section above document list */}
+              {activeStep === 1 && (
+                <div>
+                  {/* When Upload step is active and showUploadSection is true, show upload section */}
                   {showUploadSection && (
                     <motion.div
                       key="upload"
@@ -116,7 +215,7 @@ function StepperApp({setIsBotOpen}) {
                     </motion.div>
                   )}
 
-                  {/* Always show document list table */}
+                  {/* Always show document list table with role-based tabs */}
                   <motion.div
                     key="document-list"
                     variants={contentVariants}
@@ -124,107 +223,38 @@ function StepperApp({setIsBotOpen}) {
                     animate="visible"
                   >
                     <div className="mb-6">
-                      <Tabs defaultValue="pending" className="w-full">
-                        <TabsList className="mb-4 bg-blue-50 w-full">
-                          <TabsTrigger
-                            value="pending"
-                            className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-                          >
-                            Pending
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="approved"
-                            className="flex-1 data-[state=active]:bg-green-600 data-[state=active]:text-white"
-                          >
-                            Approved
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="disapproved"
-                            className="flex-1 data-[state=active]:bg-red-400 data-[state=active]:text-white"
-                          >
-                            Deactivated
-                          </TabsTrigger>
-                           <TabsTrigger
-                            value="refdoc"
-                            className="flex-1 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
-                          >
-                            Reference Documents
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="pending">
-                          <DocumentReviewTable setActiveStep={setActiveStep} status="pending" setIsBotOpen={setIsBotOpen}/>
-                        </TabsContent>
-
-                        <TabsContent value="approved">
-                        <DocumentApprovedTable setIsBotOpen={setIsBotOpen}/>
-                        </TabsContent>
-
-                        <TabsContent value="disapproved">
-                          <DeactivatedDocumentsTable/>
-                        </TabsContent>
-                       
-                        <TabsContent value="refdoc">
-                          <DocumentReviewTable setActiveStep={setActiveStep} status="reference" />
-                        </TabsContent>
-                      </Tabs>
+                      <RoleBasedTabs />
                     </div>
                   </motion.div>
+                </div>
+              )}
+
+              {/* Only show Review Management if user can edit documents */}
+              {activeStep === 2 && ability.can('edit', 'Document') && (
+                <ReviewRelated />
+              )}
+              
+              {/* Step 3 content */}
+              {activeStep === 3 && (
+                <>
+                  {/* If user can edit, show DocumentSignature, otherwise show document list */}
+                  {ability.can('edit', 'Document') ? (
+                    <DocumentSignature />
+                  ) : (
+                    <div key="document-list">
+                      <div className="mb-6">
+                        <RoleBasedTabs />
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
-              {activeStep === 1 && <ReviewRelated />}
-              {activeStep === 2 && <DocumentSignature />}
-              {activeStep === 3 && (
-                <div
-                  key="document-list"
-                >
+              {/* Default state - no step active, show document store */}
+              {activeStep === null && (
+                <div key="default-document-list">
                   <div className="mb-6">
-                    {/* <h1 className="text-2xl mb-4 font-medium text-blue-600">Document Store</h1> */}
-                    <Tabs defaultValue="pending" className="w-full">
-                      <TabsList className="mb-4 bg-blue-50 w-full">
-                        <TabsTrigger
-                          value="pending"
-                          className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-                        >
-                          Pending
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="approved"
-                          className="flex-1 data-[state=active]:bg-green-600 data-[state=active]:text-white"
-                        >
-                          Approved
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="disapproved"
-                          className="flex-1 data-[state=active]:bg-red-400 data-[state=active]:text-white"
-                        >
-                          Deactivated
-                        </TabsTrigger>
-                        <TabsTrigger
-                          value="refdoc"
-                          className="flex-1 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
-                        >
-                          Reference Documents
-                        </TabsTrigger>
-                      </TabsList>
-
-                      <TabsContent value="pending">
-                        <DocumentReviewTable setActiveStep={setActiveStep} status="pending" setIsBotOpen={setIsBotOpen}/>
-                      </TabsContent>
-
-                      <TabsContent value="approved">
-                      <DocumentApprovedTable setIsBotOpen={setIsBotOpen}/>
-                      </TabsContent>
-
-                      <TabsContent value="disapproved">
-                      <DeactivatedDocumentsTable/>
-                      </TabsContent>
-                      
-                      <TabsContent value="refdoc">
-                        <DocumentReviewTable setActiveStep={setActiveStep} status="reference" setIsBotOpen={setIsBotOpen}/>
-                      </TabsContent>
-                    </Tabs>
+                    <RoleBasedTabs />
                   </div>
                 </div>
               )}

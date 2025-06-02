@@ -39,6 +39,10 @@ import SignatureComponent from "../signature/signature-component";
 import { Textarea } from "../ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
+// Import CASL components
+import { Can, AbilityContext } from "./sections/Can"; // Both in one line
+import { useAbility } from '@casl/react';
+
 function formatTimestamp(timestamp) {
   try {
     const date = new Date(timestamp);
@@ -285,6 +289,9 @@ function DocumentReviewTable({ setActiveStep, status, setIsBotOpen }) {
     updateDocumentReviewStatus,
     isSubmitted,
   } = useContext(DocumentContext);
+
+  // Add CASL ability hook
+  const ability = useAbility(AbilityContext);
 
   const [isWebViewerLoaded, setIsWebViewerLoaded] = useState(false);
   const [isComparePopupOpen, setIsComparePopupOpen] = useState(false);
@@ -790,62 +797,69 @@ function DocumentReviewTable({ setActiveStep, status, setIsBotOpen }) {
               {!isReference &&
                 (doc.fileType === "docx" || doc.fileType === "doc") && (
                   <>
-                    <button
-                      onClick={() => handleEditClick(doc?.id)}
-                      disabled={inReview}
-                      className={`flex items-center text-xs hover:cursor-pointer ${
-                        inReview
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-yellow-600 hover:text-yellow-800"
-                      }`}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Edit
-                    </button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          disabled={inReview}
-                          className={`flex items-center text-xs hover:cursor-pointer ${
-                            inReview
-                              ? "text-gray-400 cursor-not-allowed"
-                              : "text-red-600 hover:text-red-800"
-                          }`}
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-60 p-4" align="start">
-                        <div className="space-y-4">
-                          <h4 className="font-medium text-sm">
-                            Confirm Deletion
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Are you sure you want to delete this document?
-                          </p>
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDeletePopoverOpen(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                handleDeleteDocument(doc);
-                                setDeletePopoverOpen(false);
-                              }}
-                            >
-                              Delete
-                            </Button>
+                    {/* Edit Button - Show for Manager and Admin, Hide for Normal User */}
+                    <Can I="edit" a="Document">
+                      <button
+                        onClick={() => handleEditClick(doc?.id)}
+                        disabled={inReview}
+                        className={`flex items-center text-xs hover:cursor-pointer ${
+                          inReview
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-yellow-600 hover:text-yellow-800"
+                        }`}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </button>
+                    </Can>
+
+                    {/* Delete Button - Only show for Admin */}
+                    <Can I="delete" a="Document">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            disabled={inReview}
+                            className={`flex items-center text-xs hover:cursor-pointer ${
+                              inReview
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-red-600 hover:text-red-800"
+                            }`}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60 p-4" align="start">
+                          <div className="space-y-4">
+                            <h4 className="font-medium text-sm">
+                              Confirm Deletion
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Are you sure you want to delete this document?
+                            </p>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeletePopoverOpen(false)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  handleDeleteDocument(doc);
+                                  setDeletePopoverOpen(false);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                        </PopoverContent>
+                      </Popover>
+                    </Can>
                   </>
                 )}
             </div>
@@ -1455,4 +1469,4 @@ function DocumentReviewTable({ setActiveStep, status, setIsBotOpen }) {
   );
 }
 
-export default DocumentReviewTable;
+export default DocumentReviewTable

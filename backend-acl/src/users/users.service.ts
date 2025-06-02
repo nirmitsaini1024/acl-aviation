@@ -35,11 +35,12 @@ export class UsersService {
     }
 
     async getAllUsers() {
-        const UserData = await this.UserModel.find();
-        if (!UserData || UserData.length == 0) {
-            throw new NotFoundException('Users not found!');
-        }
-        return UserData;
+        const UserData = await this.UserModel.find()
+            .populate('groups', 'groupName description')
+            .populate('roles', 'roleName description')
+            .populate('tenant_id', 'name');
+        
+        return UserData || [];
     }
 
     async addGroupToUser(userId: string, groupId: MongooseSchema.Types.ObjectId) {

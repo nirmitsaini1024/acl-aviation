@@ -22,11 +22,11 @@ export class RoleService {
   }
 
   async getAllRoles() {
-    const roleData = await this.roleModel.find();
-    if (!roleData || roleData.length === 0) {
-      throw new NotFoundException('Roles not found!');
-    }
-    return roleData;
+    const roleData = await this.roleModel.find()
+      .populate('userIds', 'firstName lastName email')
+      .populate('groupIds', 'groupName description');
+    
+    return roleData || [];
   }
 
   async getRoleById(id: string) {
