@@ -106,7 +106,7 @@ const getAuthHeaders = () => {
 
 const getTenantId = () => {
   // Implement the logic to get tenant_id
-  return "default_tenant_id"; // Placeholder, actual implementation needed
+  return "683c46b49b5ac2818e3818ad"; // Placeholder, actual implementation needed
 };
 
 const fetchUsers = async () => {

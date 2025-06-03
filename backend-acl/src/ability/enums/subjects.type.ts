@@ -1,0 +1,17 @@
+export enum SubjectsType {
+  DOCUMENT_REPO = 'DocumentRepo',
+  IN_REVIEW_DOCUMENT = 'InReviewDocument',
+  REFERENCE_DOCUMENT = 'ReferenceDocument',
+  APPROVED_DOCUMENT = 'ApprovedDocument',
+  DEACTIVATED_DOCUMENT = 'DeactivatedDocument',
+  REVIEW_ADMINISTRATION = 'ReviewAdministration',
+  UPLOAD = 'Upload',
+  WORKING_COPY = 'WorkingCopy',
+  REVIEW_MANAGEMENT = 'ReviewManagement',
+  ADMIN_DOCUMENT_REPOSITORY_VIEW = 'AdminDocumentRepositoryView',
+  PENDING_DOCUMENT = 'PendingDocument',
+  FINAL_COPY = 'FinalCopy',
+  SUMMARY = 'Summary',
+  ANNOTATED_DOCS = 'AnnotatedDocs',
+  ALL = 'all',
+}

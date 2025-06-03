@@ -17,6 +17,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule
   ],
   controllers: [RolesController],
-  providers: [RoleService]
+  providers: [RoleService],
+  exports : [MongooseModule]
 })
 export class RolesModule {}

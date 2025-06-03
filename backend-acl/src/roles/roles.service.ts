@@ -60,6 +60,44 @@ export class RoleService {
 
     return updatedRole;
   }
+  
+async getUserRole(user: User) {
+  if (!user || !user._id) {
+    throw new BadRequestException('User is required');
+  }
+
+  if (!user || typeof user._id !== 'string') {
+    throw new BadRequestException('Invalid user ID');
+  }
+  const userId = new Types.ObjectId(user._id as string);
+
+
+  // Find the user with populated group references
+  const userWithGroups = await this.userModel.findById(userId).populate('groups');
+
+  if (!userWithGroups) {
+    throw new NotFoundException(`User with ID ${userId} not found`);
+  }
+
+  // Extract group IDs
+  const groupIds = userWithGroups.groups?.map((group: any) => group._id) || [];
+
+  // Find roles assigned directly to the user or to the groups the user is in
+  const roles = await this.roleModel.find({
+    $or: [
+      { userIds: userId },
+      { groupIds: { $in: groupIds } }
+    ]
+  });
+
+  if (!roles || roles.length === 0) {
+    throw new NotFoundException('No roles found for the user');
+  }
+
+  return roles;
+}
+
+
 
   async deleteRole(id: string) {
     const result = await this.roleModel.findByIdAndDelete(id);

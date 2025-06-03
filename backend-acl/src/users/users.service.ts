@@ -31,7 +31,7 @@ export class UsersService {
     }
 
     async findByEmail(email: string) {
-        return await this.UserModel.findOne({ email });
+        return this.UserModel.findOne({ email }).lean().exec();
     }
 
     async getAllUsers() {
