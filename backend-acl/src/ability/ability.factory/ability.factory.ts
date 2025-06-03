@@ -1,13 +1,12 @@
-// ability/ability.factory.ts - COMPLETE VERSION
+// ability/ability.factory.ts
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { AbilityBuilder, Ability, AbilityClass, ExtractSubjectType } from '@casl/ability';
+import { AbilityBuilder, Ability, AbilityClass } from '@casl/ability';
 import { ActionsEnum } from '../enums/actions.enum';
-import { AccessLevel} from '../enums/access-level.enum';
-import {SubjectsType} from '../enums/subjects.type';
+import { AccessLevel } from '../enums/access-level.enum';
+import { SubjectsType } from '../enums/subjects.type';
 
-// Interfaces
 export interface BaseRole {
   _id: string;
   domain?: string;
@@ -19,7 +18,10 @@ export interface BaseRole {
   groupIds?: string[];
   documentRepoAccess?: any;
   reviewAdministration?: any;
-  [key: string]: any; // Allow any additional fields with access levels
+  taskManagement?: string;
+  userManagement?: string;
+  reportAccess?: string;
+  [key: string]: any;
 }
 
 export interface ProcessedPermission {
@@ -58,97 +60,71 @@ export class AbilityFactory {
     if (!user) {
       return build({
         detectSubjectType: (item: any) =>
-            item?.__caslSubjectType__ ?? item?.constructor?.name,
-        });
-      }
+          item?.__caslSubjectType__ ?? item?.constructor?.name,
+      });
+    }
 
-    // Get all roles for the user (direct + group roles)
     const userRoles = await this.getUserRoles(user);
-
-    // Process all permissions from roles
     const allPermissions = this.extractPermissionsFromRoles(userRoles, user);
 
-    // Apply permissions to CASL
     allPermissions.forEach(permission => {
       this.applyPermission(can, cannot, permission, user);
     });
 
     return build({
       detectSubjectType: (item: any) =>
-          item?.__caslSubjectType__ ?? item?.constructor?.name,
+        item?.__caslSubjectType__ ?? item?.constructor?.name,
     });
   }
 
   async getUserAbilitiesSummary(user: UserWithRoles): Promise<any> {
-    console.log('=== DEBUGGING USER ABILITIES ===');
-    console.log('Input user:', JSON.stringify(user, null, 2));
-    
     const roles = await this.getUserRoles(user);
-    console.log('Found roles count:', roles.length);
-    console.log('Raw roles data:', JSON.stringify(roles, null, 2));
     
-    const permissions = this.extractPermissionsFromRoles(roles, user);
-    console.log('Extracted permissions count:', permissions.length);
-    console.log('Permissions:', JSON.stringify(permissions, null, 2));
-    
-    // Ensure completely clean objects without any circular references
-    const cleanPermissions = permissions.map(perm => ({
-      subject: perm.subject,
-      action: perm.action,
-      accessLevel: perm.accessLevel,
-      conditions: perm.conditions ? JSON.parse(JSON.stringify(perm.conditions)) : undefined,
-      fields: perm.fields ? [...perm.fields] : undefined,
-      context: perm.context ? JSON.parse(JSON.stringify(perm.context)) : undefined
-    }));
-    
-    // Clean roles data to avoid circular references
-    const cleanRoles = roles.map(role => ({
-      id: role._id?.toString(),
-      name: role.roleName,
-      title: role.roleTitle,
-      domain: role.domain,
-      department: role.department,
-      description: role.description
-    }));
-    
-    console.log('=== END DEBUGGING ===');
+    if (!roles || roles.length === 0) {
+      return this.getDefaultPermissions();
+    }
+
+    // Merge all role permissions
+    const mergedPermissions = this.mergeAllRolePermissions(roles);
     
     return {
       totalRoles: roles.length,
-      totalPermissions: cleanPermissions.length,
-      permissions: cleanPermissions,
-      roles: cleanRoles
+      roles: roles.map(role => ({
+        id: role._id?.toString(),
+        name: role.roleName,
+        title: role.roleTitle,
+        domain: role.domain,
+        department: role.department
+      })),
+      permissions: mergedPermissions
     };
   }
 
   private async getUserRoles(user: UserWithRoles): Promise<BaseRole[]> {
     const roles: BaseRole[] = [];
 
-    // Get direct user roles
     if (user.roleIds?.length) {
       const userRoles = await this.roleModel.find({
         _id: { $in: user.roleIds }
-      }).lean().exec(); // Use .lean() to get plain objects
+      }).lean().exec();
       roles.push(...userRoles);
     }
 
-    // Get roles from user groups
     if (user.groupIds?.length) {
       const userGroups = await this.groupModel.find({
         _id: { $in: user.groupIds }
-      }).lean().exec(); // Use .lean() to get plain objects
+      }).lean().exec();
 
       for (const group of userGroups) {
         if (group.roleIds?.length) {
           const groupRoles = await this.roleModel.find({
             _id: { $in: group.roleIds }
-          }).lean().exec(); // Use .lean() to get plain objects
+          }).lean().exec();
           roles.push(...groupRoles);
         }
       }
     }
 
-    // Remove duplicate roles
     return this.removeDuplicateRoles(roles);
   }
 
@@ -166,16 +142,226 @@ export class AbilityFactory {
   }
 
   private shouldReplaceRole(existing: BaseRole, current: BaseRole): boolean {
-    // Logic to determine which role takes precedence
-    // Can be based on access levels, priority, etc.
-    return false; // Default: keep existing
+    return false; // Keep existing for now
+  }
+
+  private mergeAllRolePermissions(roles: BaseRole[]): any {
+    // Start with default (no access) structure
+    const merged = this.getDefaultPermissions().permissions;
+
+    roles.forEach(role => {
+      // Merge documentRepoAccess
+      if (role.documentRepoAccess) {
+        this.mergeDocumentRepoAccess(merged.documentRepoAccess, role.documentRepoAccess);
+      }
+
+      // Merge reviewAdministration
+      if (role.reviewAdministration) {
+        this.mergeReviewAdministration(merged.reviewAdministration, role.reviewAdministration);
+      }
+
+      // Merge simple fields
+      if (role.taskManagement) {
+        merged.taskManagement = this.getHigherAccessLevel(merged.taskManagement, role.taskManagement);
+      }
+      if (role.userManagement) {
+        merged.userManagement = this.getHigherAccessLevel(merged.userManagement, role.userManagement);
+      }
+      if (role.reportAccess) {
+        merged.reportAccess = this.getHigherAccessLevel(merged.reportAccess, role.reportAccess);
+      }
+    });
+
+    return merged;
+  }
+
+  private mergeDocumentRepoAccess(target: any, source: any): void {
+    if (source.inReview) {
+      if (source.inReview.permission) {
+        target.inReview.permission = this.getHigherAccessLevel(target.inReview.permission, source.inReview.permission);
+      }
+      if (source.inReview.actions) {
+        if (source.inReview.actions.referenceDocumentAccess) {
+          target.inReview.actions.referenceDocumentAccess = this.getHigherAccessLevel(
+            target.inReview.actions.referenceDocumentAccess,
+            source.inReview.actions.referenceDocumentAccess
+          );
+        }
+        if (source.inReview.actions.notify) {
+          target.inReview.actions.notify = this.getHigherAccessLevel(
+            target.inReview.actions.notify,
+            source.inReview.actions.notify
+          );
+        }
+      }
+    }
+
+    if (source.referenceDocument) {
+      target.referenceDocument = this.getHigherAccessLevel(target.referenceDocument, source.referenceDocument);
+    }
+    if (source.approved) {
+      target.approved = this.getHigherAccessLevel(target.approved, source.approved);
+    }
+    if (source.deactivated) {
+      target.deactivated = this.getHigherAccessLevel(target.deactivated, source.deactivated);
+    }
+  }
+
+  private mergeReviewAdministration(target: any, source: any): void {
+    if (source.reviewAdministrationAccess) {
+      if (source.reviewAdministrationAccess.permission) {
+        target.reviewAdministrationAccess.permission = this.getHigherAccessLevel(
+          target.reviewAdministrationAccess.permission,
+          source.reviewAdministrationAccess.permission
+        );
+      }
+      if (source.reviewAdministrationAccess.upload) {
+        if (source.reviewAdministrationAccess.upload.permission) {
+          target.reviewAdministrationAccess.upload.permission = this.getHigherAccessLevel(
+            target.reviewAdministrationAccess.upload.permission,
+            source.reviewAdministrationAccess.upload.permission
+          );
+        }
+        if (source.reviewAdministrationAccess.upload.actions) {
+          if (source.reviewAdministrationAccess.upload.actions.uploadWorkingCopy) {
+            target.reviewAdministrationAccess.upload.actions.uploadWorkingCopy = this.getHigherAccessLevel(
+              target.reviewAdministrationAccess.upload.actions.uploadWorkingCopy,
+              source.reviewAdministrationAccess.upload.actions.uploadWorkingCopy
+            );
+          }
+          if (source.reviewAdministrationAccess.upload.actions.uploadReferenceDocument) {
+            target.reviewAdministrationAccess.upload.actions.uploadReferenceDocument = this.getHigherAccessLevel(
+              target.reviewAdministrationAccess.upload.actions.uploadReferenceDocument,
+              source.reviewAdministrationAccess.upload.actions.uploadReferenceDocument
+            );
+          }
+        }
+      }
+    }
+
+    if (source.reviewManagement) {
+      target.reviewManagement = this.getHigherAccessLevel(target.reviewManagement, source.reviewManagement);
+    }
+
+    if (source.adminDocumentRepositoryView) {
+      if (source.adminDocumentRepositoryView.permission) {
+        target.adminDocumentRepositoryView.permission = this.getHigherAccessLevel(
+          target.adminDocumentRepositoryView.permission,
+          source.adminDocumentRepositoryView.permission
+        );
+      }
+      if (source.adminDocumentRepositoryView.pending) {
+        target.adminDocumentRepositoryView.pending = this.getHigherAccessLevel(
+          target.adminDocumentRepositoryView.pending,
+          source.adminDocumentRepositoryView.pending
+        );
+      }
+      if (source.adminDocumentRepositoryView.approved) {
+        if (source.adminDocumentRepositoryView.approved.permission) {
+          target.adminDocumentRepositoryView.approved.permission = this.getHigherAccessLevel(
+            target.adminDocumentRepositoryView.approved.permission,
+            source.adminDocumentRepositoryView.approved.permission
+          );
+        }
+        if (source.adminDocumentRepositoryView.approved.actions) {
+          const sourceActions = source.adminDocumentRepositoryView.approved.actions;
+          const targetActions = target.adminDocumentRepositoryView.approved.actions;
+          
+          if (sourceActions.finalCopy) {
+            targetActions.finalCopy = this.getHigherAccessLevel(targetActions.finalCopy, sourceActions.finalCopy);
+          }
+          if (sourceActions.summary) {
+            targetActions.summary = this.getHigherAccessLevel(targetActions.summary, sourceActions.summary);
+          }
+          if (sourceActions.annotatedDocs) {
+            targetActions.annotatedDocs = this.getHigherAccessLevel(targetActions.annotatedDocs, sourceActions.annotatedDocs);
+          }
+        }
+      }
+      if (source.adminDocumentRepositoryView.deactivated) {
+        target.adminDocumentRepositoryView.deactivated = this.getHigherAccessLevel(
+          target.adminDocumentRepositoryView.deactivated,
+          source.adminDocumentRepositoryView.deactivated
+        );
+      }
+      if (source.adminDocumentRepositoryView.referenceDocuments) {
+        target.adminDocumentRepositoryView.referenceDocuments = this.getHigherAccessLevel(
+          target.adminDocumentRepositoryView.referenceDocuments,
+          source.adminDocumentRepositoryView.referenceDocuments
+        );
+      }
+    }
+  }
+
+  private getHigherAccessLevel(current: string, incoming: string): string {
+    const levels = {
+      'no_access': 0,
+      'view_access': 1,
+      'write_access': 2,
+      'admin_access': 3
+    };
+
+    const currentLevel = levels[current] || 0;
+    const incomingLevel = levels[incoming] || 0;
+
+    return incomingLevel > currentLevel ? incoming : current;
+  }
+
+  private getDefaultPermissions(): any {
+    return {
+      totalRoles: 0,
+      roles: [],
+      permissions: {
+        documentRepoAccess: {
+          inReview: {
+            permission: "no_access",
+            actions: {
+              referenceDocumentAccess: "no_access",
+              notify: "no_access"
+            }
+          },
+          referenceDocument: "view_access", // Default read access to reference docs
+          approved: "view_access", // Default read access to approved docs
+          deactivated: "no_access"
+        },
+        reviewAdministration: {
+          reviewAdministrationAccess: {
+            permission: "no_access",
+            upload: {
+              permission: "no_access",
+              actions: {
+                uploadWorkingCopy: "no_access",
+                uploadReferenceDocument: "no_access"
+              }
+            }
+          },
+          reviewManagement: "no_access",
+          adminDocumentRepositoryView: {
+            permission: "no_access",
+            pending: "no_access",
+            approved: {
+              permission: "no_access",
+              actions: {
+                finalCopy: "no_access",
+                summary: "no_access",
+                annotatedDocs: "no_access"
+              }
+            },
+            deactivated: "no_access",
+            referenceDocuments: "no_access"
+          }
+        },
+        taskManagement: "no_access",
+        userManagement: "no_access",
+        reportAccess: "no_access"
+      }
+    };
   }
 
   private extractPermissionsFromRoles(roles: BaseRole[], user: UserWithRoles): ProcessedPermission[] {
     const permissions: ProcessedPermission[] = [];
 
     roles.forEach(role => {
-      // Process each field in the role that has access level
       Object.keys(role).forEach(key => {
         if (this.isAccessLevelField(role[key])) {
           const permission = this.convertToPermission(key, role[key], role, user);
@@ -183,13 +369,8 @@ export class AbilityFactory {
             permissions.push(permission);
           }
         } else if (this.isNestedPermissionsObject(role[key])) {
-          // Handle nested objects like documentRepoAccess
           const nestedPermissions = this.extractNestedPermissions(key, role[key], role, user);
           permissions.push(...nestedPermissions);
-        } else if (Array.isArray(role[key])) {
-          // Handle permission arrays
-          const arrayPermissions = this.extractArrayPermissions(key, role[key], role, user);
-          permissions.push(...arrayPermissions);
         }
       });
     });
@@ -198,7 +379,7 @@ export class AbilityFactory {
   }
 
   private isAccessLevelField(value: any): boolean {
-    return typeof value === 'string' && Object.values(AccessLevel).includes(value as AccessLevel);
+    return typeof value === 'string' && ['no_access', 'view_access', 'write_access', 'admin_access'].includes(value);
   }
 
   private isNestedPermissionsObject(value: any): boolean {
@@ -214,12 +395,10 @@ export class AbilityFactory {
     role: BaseRole, 
     user: UserWithRoles
   ): ProcessedPermission | null {
-    // Map field names to subjects and actions
     const fieldMapping = this.getFieldMapping();
     const mapping = fieldMapping[fieldName];
 
     if (!mapping) {
-      // Dynamic mapping for unknown fields
       return {
         subject: this.inferSubjectFromFieldName(fieldName),
         action: this.inferActionFromFieldName(fieldName),
@@ -256,14 +435,12 @@ export class AbilityFactory {
       const value = nestedObj[key];
       
       if (this.isAccessLevelField(value)) {
-        // Direct access level field
         const fullKey = `${parentKey}.${key}`;
         const permission = this.convertToPermission(fullKey, value, role, user);
         if (permission) {
           permissions.push(permission);
         }
       } else if (typeof value === 'object' && value !== null) {
-        // Check for nested structure with 'permission' and 'actions'
         if (value.permission && this.isAccessLevelField(value.permission)) {
           const fullKey = `${parentKey}.${key}.permission`;
           const permission = this.convertToPermission(fullKey, value.permission, role, user);
@@ -272,7 +449,6 @@ export class AbilityFactory {
           }
         }
         
-        // Process 'actions' object if it exists
         if (value.actions && typeof value.actions === 'object') {
           const actionsPermissions = this.extractNestedPermissions(
             `${parentKey}.${key}.actions`,
@@ -283,7 +459,6 @@ export class AbilityFactory {
           permissions.push(...actionsPermissions);
         }
         
-        // Recursively process other nested objects
         const nestedPermissions = this.extractNestedPermissions(
           `${parentKey}.${key}`,
           value,
@@ -297,129 +472,8 @@ export class AbilityFactory {
     return permissions;
   }
 
-  private extractArrayPermissions(
-    arrayKey: string,
-    permArray: any[],
-    role: BaseRole,
-    user: UserWithRoles
-  ): ProcessedPermission[] {
-    const permissions: ProcessedPermission[] = [];
-
-    permArray.forEach((item, index) => {
-      if (typeof item === 'object') {
-        Object.keys(item).forEach(key => {
-          if (this.isAccessLevelField(item[key])) {
-            const fullKey = `${arrayKey}[${index}].${key}`;
-            const permission = this.convertToPermission(fullKey, item[key], role, user);
-            if (permission) {
-              permissions.push(permission);
-            }
-          }
-        });
-      }
-    });
-
-    return permissions;
-  }
-
   private getFieldMapping(): Record<string, any> {
     return {
-      // Document Repository Access mappings
-      'documentRepoAccess.inReview.permission': {
-        subject: 'Document',
-        action: ActionsEnum.MANAGE,
-        conditions: { category: 'inReview' }
-      },
-      'documentRepoAccess.inReview.actions.referenceDocumentAccess': {
-        subject: 'ReferenceDocument',
-        action: ActionsEnum.READ,
-        conditions: { context: 'inReview' }
-      },
-      'documentRepoAccess.inReview.actions.notify': {
-        subject: 'Notification',
-        action: ActionsEnum.NOTIFY,
-        conditions: { context: 'inReview' }
-      },
-      'documentRepoAccess.referenceDocument': {
-        subject: 'ReferenceDocument',
-        action: ActionsEnum.READ
-      },
-      'documentRepoAccess.approved': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { status: 'approved' }
-      },
-      'documentRepoAccess.deactivated': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { status: 'deactivated' }
-      },
-
-      // Review Administration mappings
-      'reviewAdministration.reviewAdministrationAccess.permission': {
-        subject: 'ReviewAdmin',
-        action: ActionsEnum.READ
-      },
-      'reviewAdministration.reviewAdministrationAccess.upload.permission': {
-        subject: 'Document',
-        action: ActionsEnum.UPLOAD,
-        conditions: { context: 'reviewAdmin' }
-      },
-      'reviewAdministration.reviewAdministrationAccess.upload.actions.uploadWorkingCopy': {
-        subject: 'Document',
-        action: ActionsEnum.UPLOAD,
-        conditions: { type: 'workingCopy' }
-      },
-      'reviewAdministration.reviewAdministrationAccess.upload.actions.uploadReferenceDocument': {
-        subject: 'ReferenceDocument',
-        action: ActionsEnum.UPLOAD
-      },
-      'reviewAdministration.reviewManagement': {
-        subject: 'Review',
-        action: ActionsEnum.MANAGE
-      },
-
-      // Admin Document Repository View mappings
-      'reviewAdministration.adminDocumentRepositoryView.permission': {
-        subject: 'AdminDocumentView',
-        action: ActionsEnum.READ
-      },
-      'reviewAdministration.adminDocumentRepositoryView.pending': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { status: 'pending' }
-      },
-      'reviewAdministration.adminDocumentRepositoryView.approved.permission': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { status: 'approved', context: 'admin' }
-      },
-      'reviewAdministration.adminDocumentRepositoryView.approved.actions.finalCopy': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { type: 'finalCopy' }
-      },
-      'reviewAdministration.adminDocumentRepositoryView.approved.actions.summary': {
-        subject: 'DocumentSummary',
-        action: ActionsEnum.READ
-      },
-      'reviewAdministration.adminDocumentRepositoryView.approved.actions.annotatedDocs': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { type: 'annotated' }
-      },
-      'reviewAdministration.adminDocumentRepositoryView.deactivated': {
-        subject: 'Document',
-        action: ActionsEnum.READ,
-        conditions: { status: 'deactivated', context: 'admin' }
-      },
-      'reviewAdministration.adminDocumentRepositoryView.referenceDocuments': {
-        subject: 'ReferenceDocument',
-        action: ActionsEnum.READ,
-        conditions: { context: 'admin' }
-      },
-
-      // Generic mappings
       'taskManagement': {
         subject: 'Task',
         action: ActionsEnum.MANAGE
@@ -436,19 +490,16 @@ export class AbilityFactory {
   }
 
   private inferSubjectFromFieldName(fieldName: string): string {
-    // Simple inference logic
     if (fieldName.toLowerCase().includes('document')) return 'Document';
     if (fieldName.toLowerCase().includes('task')) return 'Task';
     if (fieldName.toLowerCase().includes('user')) return 'User';
     if (fieldName.toLowerCase().includes('report')) return 'Report';
     if (fieldName.toLowerCase().includes('notification') || fieldName.toLowerCase().includes('notify')) return 'Notification';
     
-    // Default to the field name capitalized
     return fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
   }
 
   private inferActionFromFieldName(fieldName: string): ActionsEnum {
-    // Simple inference logic
     if (fieldName.toLowerCase().includes('manage')) return ActionsEnum.MANAGE;
     if (fieldName.toLowerCase().includes('create')) return ActionsEnum.CREATE;
     if (fieldName.toLowerCase().includes('update')) return ActionsEnum.UPDATE;
@@ -456,7 +507,6 @@ export class AbilityFactory {
     if (fieldName.toLowerCase().includes('upload')) return ActionsEnum.UPLOAD;
     if (fieldName.toLowerCase().includes('notify')) return ActionsEnum.NOTIFY;
     
-    // Default to read
     return ActionsEnum.READ;
   }
 
@@ -529,7 +579,9 @@ export class AbilityFactory {
           can(ActionsEnum.MANAGE, subject, processedConditions);
         }
         
-       
+        if (subject === 'Document') {
+          can( subject, processedConditions);
+        }
         if (subject === 'Task') {
           can( subject, processedConditions);
         }
@@ -546,7 +598,6 @@ export class AbilityFactory {
   private processConditions(conditions: any, user: UserWithRoles): any {
     if (!conditions) return undefined;
 
-    // Replace template variables
     const conditionsStr = JSON.stringify(conditions)
       .replace(/\{\{userId\}\}/g, user.id)
       .replace(/\{\{userEmail\}\}/g, user.email)
