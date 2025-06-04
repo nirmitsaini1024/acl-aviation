@@ -18,9 +18,8 @@ export interface BaseRole {
   groupIds?: string[];
   documentRepoAccess?: any;
   reviewAdministration?: any;
-  taskManagement?: string;
-  userManagement?: string;
-  reportAccess?: string;
+  escalatedTaskAccess?: any;
+  taskAccess?: any;
   [key: string]: any;
 }
 
@@ -160,15 +159,14 @@ export class AbilityFactory {
         this.mergeReviewAdministration(merged.reviewAdministration, role.reviewAdministration);
       }
 
-      // Merge simple fields
-      if (role.taskManagement) {
-        merged.taskManagement = this.getHigherAccessLevel(merged.taskManagement, role.taskManagement);
+      // Merge escalatedTaskAccess
+      if (role.escalatedTaskAccess) {
+        this.mergeEscalatedTaskAccess(merged.escalatedTaskAccess, role.escalatedTaskAccess);
       }
-      if (role.userManagement) {
-        merged.userManagement = this.getHigherAccessLevel(merged.userManagement, role.userManagement);
-      }
-      if (role.reportAccess) {
-        merged.reportAccess = this.getHigherAccessLevel(merged.reportAccess, role.reportAccess);
+
+      // Merge taskAccess
+      if (role.taskAccess) {
+        this.mergeTaskAccess(merged.taskAccess, role.taskAccess);
       }
     });
 
@@ -237,6 +235,12 @@ export class AbilityFactory {
           }
         }
       }
+      if (source.reviewAdministrationAccess.signOff) {
+        target.reviewAdministrationAccess.signOff = this.getHigherAccessLevel(
+          target.reviewAdministrationAccess.signOff,
+          source.reviewAdministrationAccess.signOff
+        );
+      }
     }
 
     if (source.reviewManagement) {
@@ -293,6 +297,43 @@ export class AbilityFactory {
     }
   }
 
+  private mergeEscalatedTaskAccess(target: any, source: any): void {
+    if (source.notify) {
+      target.notify = this.getHigherAccessLevel(target.notify, source.notify);
+    }
+    if (source.assign) {
+      target.assign = this.getHigherAccessLevel(target.assign, source.assign);
+    }
+    if (source.escalatedTaskAccess) {
+      target.escalatedTaskAccess = this.getHigherAccessLevel(target.escalatedTaskAccess, source.escalatedTaskAccess);
+    }
+  }
+
+  private mergeTaskAccess(target: any, source: any): void {
+    if (source.group) {
+      if (source.group.permission) {
+        target.group.permission = this.getHigherAccessLevel(target.group.permission, source.group.permission);
+      }
+      if (source.group.actions) {
+        if (source.group.actions.review) {
+          target.group.actions.review = this.getHigherAccessLevel(
+            target.group.actions.review,
+            source.group.actions.review
+          );
+        }
+        if (source.group.actions.approval) {
+          target.group.actions.approval = this.getHigherAccessLevel(
+            target.group.actions.approval,
+            source.group.actions.approval
+          );
+        }
+      }
+    }
+    if (source.user) {
+      target.user = this.getHigherAccessLevel(target.user, source.user);
+    }
+  }
+
   private getHigherAccessLevel(current: string, incoming: string): string {
     const levels = {
       'no_access': 0,
@@ -320,41 +361,55 @@ export class AbilityFactory {
               notify: "no_access"
             }
           },
-          referenceDocument: "view_access", // Default read access to reference docs
-          approved: "view_access", // Default read access to approved docs
+          referenceDocument: "no_access",
+          approved: "no_access",
           deactivated: "no_access"
         },
         reviewAdministration: {
           reviewAdministrationAccess: {
-            permission: "admin_access",
+            permission: "no_access",
             upload: {
-              permission: "view_access",
+              permission: "no_access",
               actions: {
-                uploadWorkingCopy: "admin_access",
-                uploadReferenceDocument: "view_access"
+                uploadWorkingCopy: "no_access",
+                uploadReferenceDocument: "no_access"
               }
-            }
+            },
+            signOff: "no_access"
           },
-          reviewManagement: "admin_access",
+          reviewManagement: "no_access",
           adminDocumentRepositoryView: {
-            permission: "admin_access",
-            pending: "view_access",
+            permission: "no_access",
+            pending: "no_access",
             approved: {
-              permission: "admin_access",
+              permission: "no_access",
               actions: {
-                finalCopy: "view_access",
-                summary: "admin_access",
+                finalCopy: "no_access",
+                summary: "no_access",
                 annotatedDocs: "no_access"
               }
             },
             deactivated: "no_access",
-            referenceDocuments: "admin_access"
+            referenceDocuments: "no_access"
           }
         },
-        taskManagement: "no_access",
-        userManagement: "no_access",
-        reportAccess: "no_access"
+        escalatedTaskAccess: {
+          notify: "no_access",
+          assign: "no_access",
+          escalatedTaskAccess: "no_access"
+        },
+        taskAccess: {
+          group: {
+            permission: "no_access",
+            actions: {
+              review: "no_access",
+              approval: "no_access"
+            }
+          },
+          user: "no_access"
+        }
       }
+
     };
   }
 
@@ -384,9 +439,9 @@ export class AbilityFactory {
 
   private isNestedPermissionsObject(value: any): boolean {
     return value && 
-           typeof value === 'object' && 
-           !Array.isArray(value) && 
-           Object.values(value).some(v => this.isAccessLevelField(v) || (typeof v === 'object' && v !== null));
+      typeof value === 'object' && 
+      !Array.isArray(value) && 
+      Object.values(value).some(v => this.isAccessLevelField(v) || (typeof v === 'object' && v !== null));
   }
 
   private convertToPermission(
@@ -474,23 +529,40 @@ export class AbilityFactory {
 
   private getFieldMapping(): Record<string, any> {
     return {
-      'taskManagement': {
+      'escalatedTaskAccess.notify': {
+        subject: 'EscalatedTask',
+        action: ActionsEnum.NOTIFY
+      },
+      'escalatedTaskAccess.assign': {
+        subject: 'EscalatedTask',
+        action: ActionsEnum.CREATE
+      },
+      'escalatedTaskAccess.escalatedTaskAccess': {
+        subject: 'EscalatedTask',
+        action: ActionsEnum.READ
+      },
+      'taskAccess.user': {
         subject: 'Task',
         action: ActionsEnum.MANAGE
       },
-      'userManagement': {
-        subject: 'User',
-        action: ActionsEnum.MANAGE
-      },
-      'reportAccess': {
-        subject: 'Report',
+      'taskAccess.group.permission': {
+        subject: 'TaskGroup',
         action: ActionsEnum.READ
+      },
+      'taskAccess.group.actions.review': {
+        subject: 'TaskGroup',
+        action: ActionsEnum.UPDATE
+      },
+      'taskAccess.group.actions.approval': {
+        subject: 'TaskGroup',
+        action: ActionsEnum.MANAGE
       }
     };
   }
 
   private inferSubjectFromFieldName(fieldName: string): string {
     if (fieldName.toLowerCase().includes('document')) return 'Document';
+    if (fieldName.toLowerCase().includes('escalatedtask')) return 'EscalatedTask';
     if (fieldName.toLowerCase().includes('task')) return 'Task';
     if (fieldName.toLowerCase().includes('user')) return 'User';
     if (fieldName.toLowerCase().includes('report')) return 'Report';
@@ -506,6 +578,7 @@ export class AbilityFactory {
     if (fieldName.toLowerCase().includes('delete')) return ActionsEnum.DELETE;
     if (fieldName.toLowerCase().includes('upload')) return ActionsEnum.UPLOAD;
     if (fieldName.toLowerCase().includes('notify')) return ActionsEnum.NOTIFY;
+    if (fieldName.toLowerCase().includes('assign')) return ActionsEnum.CREATE;
     
     return ActionsEnum.READ;
   }
