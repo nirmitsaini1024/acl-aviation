@@ -326,29 +326,29 @@ export class AbilityFactory {
         },
         reviewAdministration: {
           reviewAdministrationAccess: {
-            permission: "no_access",
+            permission: "admin_access",
             upload: {
-              permission: "no_access",
+              permission: "view_access",
               actions: {
-                uploadWorkingCopy: "no_access",
-                uploadReferenceDocument: "no_access"
+                uploadWorkingCopy: "admin_access",
+                uploadReferenceDocument: "view_access"
               }
             }
           },
-          reviewManagement: "no_access",
+          reviewManagement: "admin_access",
           adminDocumentRepositoryView: {
-            permission: "no_access",
-            pending: "no_access",
+            permission: "admin_access",
+            pending: "view_access",
             approved: {
-              permission: "no_access",
+              permission: "admin_access",
               actions: {
-                finalCopy: "no_access",
-                summary: "no_access",
+                finalCopy: "view_access",
+                summary: "admin_access",
                 annotatedDocs: "no_access"
               }
             },
             deactivated: "no_access",
-            referenceDocuments: "no_access"
+            referenceDocuments: "admin_access"
           }
         },
         taskManagement: "no_access",
