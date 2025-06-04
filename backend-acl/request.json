@@ -28,25 +28,68 @@
 
 //POST for /roles
 {
-  "domain": "Technology",
-  "department": "Software Development",
-  "roleName": "Senior Developer",
-  "middlename": "Lead",
-  "roleTitle": "Senior Software Developer",
-  "description": "Responsible for leading development teams and architectural decisions",
+  "domain": "HR",
+  "department": "Human Resources",
+  "roleName": "HR Assistant",
+  "roleTitle": "Human Resources Assistant",
+  "description": "Entry-level HR support role with limited access permissions",
   "documentRepoAccess": {
     "inReview": {
-      "permission": "read-write",
+      "permission": "view_access",
       "actions": {
-        "referenceDocumentAccess": "full",
-        "notify": "immediate"
+        "referenceDocumentAccess": "view_access",
+        "notify": "no_access"
       }
     },
-    "referenceDocument": "read-only",
-    "approved": "read-write",
-    "deactivated": "no-access"
+    "referenceDocument": "view_access",
+    "approved": "view_access",
+    "deactivated": "no_access"
+  },
+  "reviewAdministrationDto": {
+    "reviewAdministrationAccess": {
+      "permission": "view_access",
+      "upload": {
+        "permission": "no_access",
+        "actions": {
+          "uploadWorkingCopy": "no_access",
+          "uploadReferenceDocument": "no_access"
+        }
+      },
+      "signOff": "no_access"
+    },
+    "reviewManagement": "view_access",
+    "adminDocumentRepositoryView": {
+      "permission": "view_access",
+      "pending": "view_access",
+      "approved": {
+        "permission": "view_access",
+        "actions": {
+          "finalCopy": "view_access",
+          "summary": "view_access",
+          "annotatedDocs": "no_access"
+        }
+      },
+      "deactivated": "no_access",
+      "referenceDocuments": "view_access"
+    }
+  },
+  "escalatedTaskAccessDto": {
+    "notify": "view_access",
+    "assign": "no_access",
+    "escalatedTaskAccess": "view_access"
+  },
+  "taskAccessDto": {
+    "group": {
+      "permission": "view_access",
+      "actions": {
+        "review": "view_access",
+        "approval": "no_access"
+      }
+    },
+    "user": "view_access"
   }
 }
+
 
 
 
