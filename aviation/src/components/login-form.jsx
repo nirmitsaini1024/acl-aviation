@@ -42,26 +42,43 @@ export function LoginForm({setUser}) {
         throw new Error('Login failed')
       }
 
+      // Parse the response from the backend
       const data = await response.json()
+      console.log('Login response:', data)
       
-      // Set user data based on email
-      const userData = {
-        email: formData.email,
-        role: formData.email.includes('admin') ? 'admin' : 'user',
-        name: formData.email.split('@')[0], // Use email username as name
-        profilePic: '/profile.avif',
-        sig: '/sig-2.png'
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(data.user || {}))
+      
+      // Store token if available
+      if (data.token) {
+        localStorage.setItem('token', data.token)
       }
       
-      setUser(userData)
+      // Store permissions in localStorage (CRITICAL for CASL)
+      if (data.permissions) {
+        console.log('Storing permissions in localStorage:', data.permissions)
+        localStorage.setItem('permissions', JSON.stringify(data.permissions))
+      } else {
+        console.warn('No permissions in login response')
+      }
+      
+      // Store roles if available
+      if (data.roles) {
+        localStorage.setItem('roles', JSON.stringify(data.roles))
+      }
+      
+      // Call the setUser function to update application state
+      setUser(data.user)
       
       // Navigate based on role
-      if (userData.role === 'admin') {
+      if (data.user?.role === 'admin' || 
+          (data.roles && data.roles.some(role => role.name === 'Administrator'))) {
         navigate('/admin-dashboard')
       } else {
         navigate('/landing-page')
       }
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message)
     } finally {
       setIsLoading(false)

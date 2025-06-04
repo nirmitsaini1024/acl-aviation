@@ -33,65 +33,93 @@ import RefDocPage from './pages/dashboard/refDoc';
 import CrmDashboard from './components/landing-page/crm-dashboard';
 import PersonalPage from './pages/dashboard/personal-page';
 import MyActivitiesLog from './pages/dashboard/my-activities';
+import { AbilityProvider } from './AbilityProvider';
 
 function App() {
+  // Get initial user from localStorage or use default
   const [user, setUser] = useState(() => {
     // Try to get user from localStorage on initial load
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : {
-      name: 'John Doe',
-      profilePic: '/profile.avif',
-      sig: '/sig-2.png'
-    };
+    return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  // Save user to localStorage whenever it changes
+  const [isBotOpen, setIsBotOpen] = useState(false);
+  
+  // Log permissions and user on app load for debugging
   useEffect(() => {
-    localStorage.setItem('user', JSON.stringify(user));
+    const permissionsStr = localStorage.getItem('permissions');
+    console.log('App - Permissions in localStorage:', 
+      permissionsStr ? JSON.parse(permissionsStr) : 'No permissions found');
+    console.log('App - Current user:', user);
   }, [user]);
 
-  const [isBotOpen, setIsBotOpen] = useState(false);
+  // Handle user login
+  const handleUserLogin = (userData) => {
+    console.log('User logged in:', userData);
+    
+    // Save user to localStorage
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+    }
+    
+    // Update state
+    setUser(userData);
+  };
+
+  // Handle user logout
+  const handleUserLogout = () => {
+    // Clear storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('permissions');
+    localStorage.removeItem('roles');
+    
+    // Update state
+    setUser(null);
+  };
+
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Auth pages (without sidebar) */}
-        <Route path="/" element={<LoginPage setUser={setUser}/>} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/refdoc" element={<RefDocPage />} />
-        
-        {/* Protected routes with sidebar */}
-        <Route element={<AppLayout user={user} isBotOpen={isBotOpen} setIsBotOpen={setIsBotOpen}/>}>
-          <Route path="/doc-center" element={<DocCenter setIsBotOpen={setIsBotOpen}/>} />
-          <Route path="/doc-diff-center" element={<CustomPDFTextDiffViewer />} />
-          <Route path="/escalation-center" element={<EscalationTable />} />
-          <Route path="/landing-page" element={<CrmDashboard />} />
-          <Route path="/navigate-document" element={<NavDoc3/>} />
-          <Route path="/doc-review-management-center" element={<StepperApp setIsBotOpen={setIsBotOpen}/>} />
-          <Route path="/review-related" element={<ReviewRelated/>} />
-          <Route path="/personal-page" element={<PersonalPage setUser={setUser} user={user}/>} />
-          <Route path="my-activities" element={<MyActivitiesLog />} />
-          <Route path="/admin-dashboard/notification-center" element={<NotificationCenterPage />} />
-          <Route path="/admin-dashboard/approval-center/orchestration" element={<Orchestration />} />
-          <Route path="/doc-center/doc-details/:docId" element={<DocDetails />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/admin-dashboard/users" element={<UsersPage />} />
-          <Route path="/admin-dashboard/roles" element={<RolesPage />} /> 
-          <Route path="/admin-dashboard/documents" element={<DocumentsPage />} />
-          <Route path="/admin-dashboard/groups" element={<GroupsPage />} />
-          <Route path="/admin-dashboard/departments" element={<DepartmentsPage />} />
-          <Route path="/admin-dashboard/access-page" element={<AccessControlPage />} />
-          <Route path="/admin-dashboard/assign-user" element={<UserRolesPage />} />
-          <Route path="/admin-dashboard/assign-docs" element={<DocumentRoleAssignmentPage />} />
-          <Route path="/admin-dashboard/tools/email" element={<EmailIntegrationPage />} />
-          
-          <Route path="/admin-dashboard/tools/docusign" element={<DocuSignIntegrationPage />} />
-          <Route path="/admin-dashboard/tools/office365" element={<Office365IntegrationPage />} />
-          <Route path="/admin-dashboard/configure-page" element={<PageUrlMapping />} />
-          <Route path="/ad" element={<PDFVisualDiffViewer />} />
-        </Route>
-      </Routes>
-      <Toaster/>
-    </BrowserRouter>
+    <AbilityProvider debug={false}>
+      <BrowserRouter>
+        <Routes>
+          {/* Auth pages (without sidebar) */}
+          <Route path="/" element={<LoginPage setUser={handleUserLogin} />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/refdoc" element={<RefDocPage />} />
+
+          {/* Protected routes with sidebar */}
+          <Route element={<AppLayout user={user} isBotOpen={isBotOpen} setIsBotOpen={setIsBotOpen} onLogout={handleUserLogout} />}>
+            <Route path="/doc-center" element={<DocCenter setIsBotOpen={setIsBotOpen} />} />
+            <Route path="/doc-diff-center" element={<CustomPDFTextDiffViewer />} />
+            <Route path="/escalation-center" element={<EscalationTable />} />
+            <Route path="/landing-page" element={<CrmDashboard />} />
+            <Route path="/navigate-document" element={<NavDoc3 />} />
+            <Route path="/doc-review-management-center" element={<StepperApp setIsBotOpen={setIsBotOpen} />} />
+            <Route path="/review-related" element={<ReviewRelated />} />
+            <Route path="/personal-page" element={<PersonalPage setUser={setUser} user={user} />} />
+            <Route path="my-activities" element={<MyActivitiesLog />} />
+            <Route path="/admin-dashboard/notification-center" element={<NotificationCenterPage />} />
+            <Route path="/admin-dashboard/approval-center/orchestration" element={<Orchestration />} />
+            <Route path="/doc-center/doc-details/:docId" element={<DocDetails />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/admin-dashboard/users" element={<UsersPage />} />
+            <Route path="/admin-dashboard/roles" element={<RolesPage />} />
+            <Route path="/admin-dashboard/documents" element={<DocumentsPage />} />
+            <Route path="/admin-dashboard/groups" element={<GroupsPage />} />
+            <Route path="/admin-dashboard/departments" element={<DepartmentsPage />} />
+            <Route path="/admin-dashboard/access-page" element={<AccessControlPage />} />
+            <Route path="/admin-dashboard/assign-user" element={<UserRolesPage />} />
+            <Route path="/admin-dashboard/assign-docs" element={<DocumentRoleAssignmentPage />} />
+            <Route path="/admin-dashboard/tools/email" element={<EmailIntegrationPage />} />
+            <Route path="/admin-dashboard/tools/docusign" element={<DocuSignIntegrationPage />} />
+            <Route path="/admin-dashboard/tools/office365" element={<Office365IntegrationPage />} />
+            <Route path="/admin-dashboard/configure-page" element={<PageUrlMapping />} />
+            <Route path="/ad" element={<PDFVisualDiffViewer />} />
+          </Route>
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
+    </AbilityProvider>
   );
 }
 
