@@ -100,7 +100,7 @@ export class AbilityFactory {
     };
   }
 
-  private async getUserRoles(user: UserWithRoles): Promise<BaseRole[]> {
+  public async getUserRoles(user: UserWithRoles): Promise<BaseRole[]> {
     const roles: BaseRole[] = [];
 
     if (user.roleIds?.length) {

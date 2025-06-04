@@ -13,7 +13,7 @@ export class UsersController {
         try {
             const newUser = await this.userService.createUser(createUsersDto);
             return res.status(HttpStatus.CREATED).json({
-                message: 'Document has been created successfully',
+                message: 'User has been created successfully',
                 newUser,
             });
         } catch (err) {

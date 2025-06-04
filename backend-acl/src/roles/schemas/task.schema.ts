@@ -1,21 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { AccessLevel } from 'src/ability/enums/access-level.enum'; 
 
 @Schema()
 export class GroupActions {
-  @Prop({ required: true })
-  review: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  review: AccessLevel;
 
-  @Prop({ required: true })
-  approval: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  approval: AccessLevel;
 }
 
 export const GroupActionsSchema = SchemaFactory.createForClass(GroupActions);
 
 @Schema()
 export class GroupAccess {
-  @Prop({ required: true })
-  permission: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  permission: AccessLevel;
 
   @Prop({ type: GroupActionsSchema, required: true })
   actions: GroupActions;
@@ -28,8 +29,8 @@ export class TaskAccess extends Document {
   @Prop({ type: GroupAccessSchema, required: true })
   group: GroupAccess;
 
-  @Prop({ required: true })
-  user: string;
+  @Prop({enum: Object.values(AccessLevel), required: true })
+  user: AccessLevel;
 }
 
 export const TaskAccessSchema = SchemaFactory.createForClass(TaskAccess);

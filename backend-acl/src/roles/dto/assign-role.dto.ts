@@ -10,4 +10,4 @@ export class AssignRoleDto {
   @IsString()
   @IsMongoId({ message: 'Invalid group ID format' })
   groupId?: string;
-} 
+}

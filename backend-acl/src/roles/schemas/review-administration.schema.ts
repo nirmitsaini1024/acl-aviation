@@ -1,21 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { AccessLevel } from 'src/ability/enums/access-level.enum';
 
 @Schema()
 export class UploadActions {
-  @Prop({ required: true })
-  uploadWorkingCopy: string;
+  @Prop({ enum: Object.values(AccessLevel),required: true })
+  uploadWorkingCopy: AccessLevel;
 
-  @Prop({ required: true })
-  uploadReferenceDocument: string;
+  @Prop({enum: Object.values(AccessLevel) , required: true })
+  uploadReferenceDocument: AccessLevel;
 }
 
 export const UploadActionsSchema = SchemaFactory.createForClass(UploadActions);
 
 @Schema()
 export class Upload {
-  @Prop({ required: true })
-  permission: string;
+  @Prop({enum: Object.values(AccessLevel) , required: true })
+  permission: AccessLevel;
 
   @Prop({ type: UploadActionsSchema, required: true })
   actions: UploadActions;
@@ -25,36 +26,36 @@ export const UploadSchema = SchemaFactory.createForClass(Upload);
 
 @Schema()
 export class ReviewAdministrationAccess {
-  @Prop({ required: true })
-  permission: string; // its own top-level permission
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  permission: AccessLevel; // its own top-level permission
 
   @Prop({ type: UploadSchema, required: true })
   upload: Upload;
 
-  @Prop({ required: true })
-  signOff: string;
+  @Prop({ enum: Object.values(AccessLevel) ,  required: true })
+  signOff: AccessLevel;
 }
 
 export const ReviewAdministrationAccessSchema = SchemaFactory.createForClass(ReviewAdministrationAccess);
 
 @Schema()
 export class ApprovedActions {
-  @Prop({ required: true })
-  finalCopy: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  finalCopy: AccessLevel;
 
-  @Prop({ required: true })
-  summary: string;
+  @Prop({enum: Object.values(AccessLevel), required: true })
+  summary: AccessLevel;
 
-  @Prop({ required: true })
-  annotatedDocs: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  annotatedDocs: AccessLevel;
 }
 
 export const ApprovedActionsSchema = SchemaFactory.createForClass(ApprovedActions);
 
 @Schema()
 export class Approved {
-  @Prop({ required: true })
-  permission: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  permission: AccessLevel;
 
   @Prop({ type: ApprovedActionsSchema, required: true })
   actions: ApprovedActions;
@@ -64,20 +65,20 @@ export const ApprovedSchema = SchemaFactory.createForClass(Approved);
 
 @Schema()
 export class AdminDocumentRepositoryView {
-  @Prop({ required: true })
-  permission: string; // its own top-level permission
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  permission: AccessLevel; // its own top-level permission
 
-  @Prop({ required: true })
-  pending: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  pending: AccessLevel;
 
-  @Prop({ type: ApprovedSchema, required: true })
+  @Prop({  type: ApprovedSchema, required: true })
   approved: Approved;
 
-  @Prop({ required: true })
-  deactivated: string;
+  @Prop({enum: Object.values(AccessLevel), required: true })
+  deactivated: AccessLevel;
 
-  @Prop({ required: true })
-  referenceDocuments: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  referenceDocuments: AccessLevel;
 }
 
 export const AdminDocumentRepositoryViewSchema = SchemaFactory.createForClass(AdminDocumentRepositoryView);
@@ -87,8 +88,8 @@ export class ReviewAdministration extends Document {
   @Prop({ type: ReviewAdministrationAccessSchema, required: true })
   reviewAdministrationAccess: ReviewAdministrationAccess;
 
-  @Prop({ required: true })
-  reviewManagement: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  reviewManagement: AccessLevel;
 
   @Prop({ type: AdminDocumentRepositoryViewSchema, required: true })
   adminDocumentRepositoryView: AdminDocumentRepositoryView;

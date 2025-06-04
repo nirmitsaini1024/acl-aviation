@@ -54,7 +54,7 @@ export class AuthController {
       message: 'Login successful',
       token: token.access_token,
       user: safeUser,
-      permissions: permissions.permissions, // Return the nested permission structure
+      permissions: permissions.permissions, 
       roles: permissions.roles,
       totalRoles: permissions.totalRoles
     };

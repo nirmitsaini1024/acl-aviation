@@ -1,20 +1,21 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { AccessLevel } from 'src/ability/enums/access-level.enum'; 
 
 @Schema()
 export class Actions {
-  @Prop({ required: true })
-  referenceDocumentAccess: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  referenceDocumentAccess: AccessLevel;
 
-  @Prop({ required: true })
-  notify: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  notify: AccessLevel;
 }
 
 export const ActionsSchema = SchemaFactory.createForClass(Actions);
 
 @Schema()
 export class InReview {
-  @Prop({ required: true })
-  permission: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  permission: AccessLevel;
 
   @Prop({ type: ActionsSchema, required: true })
   actions: Actions;
@@ -27,14 +28,14 @@ export class DocumentRepoAccess {
   @Prop({ type: InReviewSchema, required: true })
   inReview: InReview;
 
-  @Prop({ required: true })
-  referenceDocument: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  referenceDocument: AccessLevel;
 
-  @Prop({ required: true })
-  approved: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  approved: AccessLevel;
 
-  @Prop({ required: true })
-  deactivated: string;
+  @Prop({ enum: Object.values(AccessLevel), required: true })
+  deactivated: AccessLevel;
 }
 
 export const DocumentRepoAccessSchema = SchemaFactory.createForClass(DocumentRepoAccess);
