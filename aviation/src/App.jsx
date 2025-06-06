@@ -24,7 +24,6 @@ import DocumentRoleAssignmentPage from './pages/admin-dashboard/access-control/a
 import GroupsPage from './pages/admin-dashboard/onboarding/group';
 import DepartmentsPage from './pages/admin-dashboard/onboarding/department';
 import { useState, useEffect } from 'react';
-import DocReviewManagementCenter from './pages/dashboard/doc-review-management-center';
 import ReviewRelated from './pages/dashboard/review-related-content';
 import StepperApp from './pages/dashboard/StepperApp';
 import PDFVisualDiffViewer from './components/doc-reviewer-2/main';
@@ -33,7 +32,8 @@ import RefDocPage from './pages/dashboard/refDoc';
 import CrmDashboard from './components/landing-page/crm-dashboard';
 import PersonalPage from './pages/dashboard/personal-page';
 import MyActivitiesLog from './pages/dashboard/my-activities';
-import { AbilityProvider } from './AbilityProvider';
+import { AbilityContext } from './abilityContext';
+import { defineAbilityFor } from './ability';
 
 function App() {
   // Get initial user from localStorage or use default
@@ -43,6 +43,8 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  const [permissions, setPermissions] = useState();
+
   const [isBotOpen, setIsBotOpen] = useState(false);
   
   // Log permissions and user on app load for debugging
@@ -51,7 +53,11 @@ function App() {
     console.log('App - Permissions in localStorage:', 
       permissionsStr ? JSON.parse(permissionsStr) : 'No permissions found');
     console.log('App - Current user:', user);
+    const permissions = permissionsStr ? JSON.parse(permissionsStr) : {};
+    setPermissions(permissions);
   }, [user]);
+
+  const ability = defineAbilityFor(permissions);
 
   // Handle user login
   const handleUserLogin = (userData) => {
@@ -79,7 +85,7 @@ function App() {
   };
 
   return (
-    <AbilityProvider debug={false}>
+    <AbilityContext.Provider value={ability}>
       <BrowserRouter>
         <Routes>
           {/* Auth pages (without sidebar) */}
@@ -119,7 +125,7 @@ function App() {
         </Routes>
         <Toaster />
       </BrowserRouter>
-    </AbilityProvider>
+      </AbilityContext.Provider>
   );
 }
 
