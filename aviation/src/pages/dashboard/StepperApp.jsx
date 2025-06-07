@@ -64,12 +64,8 @@ function StepperApp({ setIsBotOpen }) {
   };
 
   // Basic permission checks
-  const canReadReviewManagement = ability?.can('read', 'reviewAdministration.reviewManagement') || false;
+  const canReadReviewManagement = ability.can('read', 'reviewAdministration.reviewManagement');
 
-  // ============================================================================
-  // ROLE-BASED PERMISSION SYSTEM - NO HARDCODING
-  // Based on CASL ability context and permission structure
-  // ============================================================================
 
   // Permission level constants
   const PERMISSION_LEVELS = {

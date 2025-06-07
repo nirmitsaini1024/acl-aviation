@@ -38,6 +38,8 @@ import {
 import SignatureComponent from "../signature/signature-component";
 import { Textarea } from "../ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { AbilityContext } from "@/abilityContext";
+ 
 
 function formatTimestamp(timestamp) {
   try {
@@ -300,6 +302,10 @@ function DocumentReviewTable({ setActiveStep, status, setIsBotOpen }) {
   const [rejectionSignature, setRejectionSignature] = useState(null);
   const [deletePopoverOpen, setDeletePopoverOpen] = useState(false);
   const [expandedSummary, setExpandedSummary] = useState(null);
+  const ability = useContext(AbilityContext);
+
+
+  const canWriteInPending = ability.can('manage','reviewAdministration.adminDocumentRepositoryView.pending')
 
   const [summaryData, setSummaryData] = useState({
     title: "Document Review Summary",
@@ -788,7 +794,7 @@ function DocumentReviewTable({ setActiveStep, status, setIsBotOpen }) {
               </button>
 
               {!isReference &&
-                (doc.fileType === "docx" || doc.fileType === "doc") && (
+                (doc.fileType === "docx" || doc.fileType === "doc") && canWriteInPending && (
                   <>
                     <button
                       onClick={() => handleEditClick(doc?.id)}
