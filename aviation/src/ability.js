@@ -31,6 +31,11 @@ export function defineAbilityFor(permissionsRaw) {
       rules.push({ action: 'read', subject });
       rules.push({ action: 'manage', subject });
     }
+    else if (permissionLevel === 'admin_access') {
+      rules.push({ action: 'read', subject });
+      rules.push({ action: 'manage', subject });
+    }
+
     // no_access → do nothing
   }
 
