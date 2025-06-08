@@ -47,7 +47,12 @@ export function LoginForm({setUser}) {
       console.log('Login response:', data)
       
       // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(data.user || {}))
+      const userData = {
+        ...data.user,
+        email: formData.email,
+        role: data.user?.role || (formData.email === 'admin@gmail.com' ? 'admin' : 'user')
+      };
+      localStorage.setItem('user', JSON.stringify(userData))
       
       // Store token if available
       if (data.token) {

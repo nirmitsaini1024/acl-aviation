@@ -269,7 +269,7 @@ export default function Sidebar({ collapsed, setCollapsed, user }) {
 
   // Combine menu items based on admin prop
   const menuStructure =
-    user?.role === "admin"
+    user?.role === "admin" || user?.email === "admin@gmail.com"
       ? [...mainMenuItems, ...adminMenuItems]
       : [...mainMenuItems];
 
