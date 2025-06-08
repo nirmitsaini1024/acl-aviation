@@ -133,7 +133,7 @@ const fetchUsers = async () => {
 };
 
 const createGroup = async (groupData) => {
-  const tenant_id = getTenantId();
+  const tenant_id = "683c46b49b5ac2818e3818ad";
   const response = await fetch(`${API_BASE_URL}/groups`, {
     method: "POST",
     headers: getAuthHeaders(),
