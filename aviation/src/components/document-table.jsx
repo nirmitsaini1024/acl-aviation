@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
 import {
   Table,
   TableBody,
@@ -64,6 +64,7 @@ import { parse, isWithinInterval } from "date-fns";
 import { ExpandedCommentsContent } from "./navigate-document/comment-expandible";
 import { Avatar } from "./ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { AbilityContext } from "@/abilityContext";
 
 // Domain and Department Options
 const domains = ["Airport", "Airline"];
@@ -240,6 +241,7 @@ const ReferenceDocumentsDialog = ({
     onSave(tempSelectedIds);
     onClose();
   };
+  
 
   // Filter out the current document from the list
   const availableDocuments = mockReferenceDocuments.filter(
@@ -488,11 +490,10 @@ const FileTree = ({
         {Object.keys(filteredCategories).map((category) => (
           <div key={category} className="space-y-1">
             <div
-              className={`flex items-center p-1.5 rounded-md cursor-pointer ${
-                selectedCategory === category
+              className={`flex items-center p-1.5 rounded-md cursor-pointer ${selectedCategory === category
                   ? "bg-blue-50 text-blue-700"
                   : "hover:bg-gray-100"
-              }`}
+                }`}
               onClick={() => toggleCategory(category)}
             >
               <button className="mr-1 flex items-center justify-center">
@@ -513,11 +514,10 @@ const FileTree = ({
                 {categories[category].map((subCategory) => (
                   <div
                     key={subCategory}
-                    className={`flex items-center p-1.5 rounded-md cursor-pointer ${
-                      selectedCategory === `${category}/${subCategory}`
+                    className={`flex items-center p-1.5 rounded-md cursor-pointer ${selectedCategory === `${category}/${subCategory}`
                         ? "bg-blue-50 text-blue-700"
                         : "hover:bg-gray-100"
-                    }`}
+                      }`}
                     onClick={() =>
                       handleCategorySelect(`${category}/${subCategory}`)
                     }
@@ -644,10 +644,10 @@ const CategoryView = React.memo(({ category, documents, onViewDocument }) => {
       nextReview:
         documents.length > 0
           ? documents.sort((a, b) => {
-              if (!a.cct?.nextReview) return 1;
-              if (!b.cct?.nextReview) return -1;
-              return new Date(a.cct.nextReview) - new Date(b.cct.nextReview);
-            })[0]?.cct?.nextReview || "N/A"
+            if (!a.cct?.nextReview) return 1;
+            if (!b.cct?.nextReview) return -1;
+            return new Date(a.cct.nextReview) - new Date(b.cct.nextReview);
+          })[0]?.cct?.nextReview || "N/A"
           : "N/A",
     };
   };
@@ -687,16 +687,12 @@ const CategoryView = React.memo(({ category, documents, onViewDocument }) => {
           documentId={`category-${category?.replace("/", "-")}`}
           user="current_user"
           getSummary={() =>
-            `This ${subCategory ? "subcategory" : "category"} "${mainCategory}${
-              subCategory ? ` - ${subCategory}` : ""
-            }" has ${metadata.docsCount} documents with ${
-              metadata.approvedDocs
-            } approved and ${
-              metadata.pendingReviews
-            } pending review. The overall feedback from reviewers has been ${
-              metadata.approvedDocs > metadata.pendingReviews
-                ? "positive"
-                : "mixed"
+            `This ${subCategory ? "subcategory" : "category"} "${mainCategory}${subCategory ? ` - ${subCategory}` : ""
+            }" has ${metadata.docsCount} documents with ${metadata.approvedDocs
+            } approved and ${metadata.pendingReviews
+            } pending review. The overall feedback from reviewers has been ${metadata.approvedDocs > metadata.pendingReviews
+              ? "positive"
+              : "mixed"
             }.`
           }
           getSentiment={() =>
@@ -798,13 +794,13 @@ const mergeDocumentData = () => {
       category: category,
       cct: cctData
         ? {
-            category: cctData.cctCategory,
-            subCategory: cctData.cctSubCategory,
-            owner: cctData.cctOwner,
-            reviewers: cctData.cctReviewers,
-            nextReview: cctData.cctNextReview,
-            version: cctData.cctVersion,
-          }
+          category: cctData.cctCategory,
+          subCategory: cctData.cctSubCategory,
+          owner: cctData.cctOwner,
+          reviewers: cctData.cctReviewers,
+          nextReview: cctData.cctNextReview,
+          version: cctData.cctVersion,
+        }
         : null,
     };
   });
@@ -984,15 +980,15 @@ export function DocumentTable({
 
   const isFiltered = Boolean(
     globalFilter ||
-      documentTypeFilter ||
-      documentNameFilter ||
-      cctFilter ||
-      domainFilter ||
-      departmentFilter ||
-      categoryFilter ||
-      dateFrom ||
-      dateTo ||
-      Object.values(columnFilters).some((val) => Boolean(val))
+    documentTypeFilter ||
+    documentNameFilter ||
+    cctFilter ||
+    domainFilter ||
+    departmentFilter ||
+    categoryFilter ||
+    dateFrom ||
+    dateTo ||
+    Object.values(columnFilters).some((val) => Boolean(val))
   );
 
   const filteredData = enrichedDocuments.filter((doc) => {
@@ -1217,9 +1213,8 @@ export function DocumentTable({
     return (
       <Badge
         variant="outline"
-        className={`px-2 py-0.5 text-xs font-medium flex items-center gap-1.5 ${
-          colors[doc.domain] || "bg-gray-100 text-gray-800 border-gray-200"
-        }`}
+        className={`px-2 py-0.5 text-xs font-medium flex items-center gap-1.5 ${colors[doc.domain] || "bg-gray-100 text-gray-800 border-gray-200"
+          }`}
       >
         <Building className="h-3.5 w-3.5" />
         <span>{doc.domain}</span>
@@ -1242,9 +1237,8 @@ export function DocumentTable({
     return (
       <Badge
         variant="outline"
-        className={`px-2 py-0.5 text-xs font-medium flex items-center gap-1.5 ${
-          colors[doc.category] || "bg-gray-100 text-gray-800 border-gray-200"
-        }`}
+        className={`px-2 py-0.5 text-xs font-medium flex items-center gap-1.5 ${colors[doc.category] || "bg-gray-100 text-gray-800 border-gray-200"
+          }`}
       >
         <Tag className="h-3.5 w-3.5" />
         <span>{doc.category}</span>
@@ -1429,7 +1423,9 @@ export function DocumentTable({
         return <File className="h-4 w-4 mr-1" />;
     }
   };
+  const ability = useContext(AbilityContext);
 
+  const canViewActionRefDoc = ability.can('manage','documentRepoAccess.inReview.actions.referenceDocumentAccess')
   const [searchParams] = useSearchParams();
   const tab = searchParams.get("tab");
 
@@ -1475,8 +1471,8 @@ export function DocumentTable({
               <ColumnHeader
                 title={
                   tab !== "refdoc" &&
-                  tab !== "approved" &&
-                  tab !== "disapproved"
+                    tab !== "approved" &&
+                    tab !== "disapproved"
                     ? "Created TS"
                     : "Uploaded TS"
                 }
@@ -1587,12 +1583,11 @@ export function DocumentTable({
                 <>
                   <TableRow
                     key={doc.id}
-                    className={`cursor-pointer border-t-[1px] border-gray-400 hover:bg-gray-50 ${
-                      expandedCCTRow === doc.id ||
-                      expandedReviewCycle === doc.id
+                    className={`cursor-pointer border-t-[1px] border-gray-400 hover:bg-gray-50 ${expandedCCTRow === doc.id ||
+                        expandedReviewCycle === doc.id
                         ? "bg-blue-50"
                         : ""
-                    }`}
+                      }`}
                     onClick={() => handleRowClick(doc)}
                   >
                     {/* Document Name Cell */}
@@ -1813,7 +1808,7 @@ export function DocumentTable({
                                           </td>
                                           <td className="px-3 py-2 whitespace-nowrap">
                                             {revision.dateApproved &&
-                                            revision.dateApproved !== "" ? (
+                                              revision.dateApproved !== "" ? (
                                               <span className="text-gray-800">
                                                 {revision.dateApproved}
                                               </span>
@@ -1914,7 +1909,7 @@ export function DocumentTable({
                                     <thead className="bg-blue-500 rounded-md text-white">
                                       <tr>
                                         <th className="px-3 py-2 text-left text-xs font-medium uppercase">
-                                          Review Document Name 
+                                          Review Document Name
                                         </th>
                                         <th className="px-3 py-2 text-left text-xs font-medium uppercase">
                                           Added By
@@ -1957,7 +1952,7 @@ export function DocumentTable({
                                                           <Eye className="h-3.5 w-3.5" />
                                                         </Button>
                                                       </TooltipTrigger>
-                                                     
+
                                                     </Tooltip>
                                                   </div>
                                                 </div>
@@ -2099,7 +2094,7 @@ export function DocumentTable({
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 {status === "refdoc" ||
-                                status === "approved" ? null : (
+                                  status === "approved" ? null : (
                                   <MoreHorizontal className="w-fit h-8 mb-1" />
                                 )}
                               </Button>
@@ -2116,7 +2111,7 @@ export function DocumentTable({
                                 )}
                                 <span>Ask AI</span>
                               </DropdownMenuItem>
-                              {status === "active" && (
+                              {status === "active" && canViewActionRefDoc && (
                                 <DropdownMenuItem
                                   className="flex justify-center items-center"
                                   onClick={(e) => {
@@ -2140,17 +2135,15 @@ export function DocumentTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`h-8 w-full flex justify-center items-center ${
-                            expandedReviewCycle === doc.id
+                          className={`h-8 w-full flex justify-center items-center ${expandedReviewCycle === doc.id
                               ? "bg-blue-100 text-blue-600"
                               : ""
-                          }`}
+                            }`}
                           onClick={(e) => handleReviewCycleClick(doc.id, e)}
                         >
                           <ChevronDown
-                            className={`h-4 w-4 transition-transform ${
-                              expandedReviewCycle === doc.id ? "rotate-180" : ""
-                            }`}
+                            className={`h-4 w-4 transition-transform ${expandedReviewCycle === doc.id ? "rotate-180" : ""
+                              }`}
                           />
                         </Button>
                       </TableCell>
@@ -2212,50 +2205,46 @@ export function DocumentTable({
                                   <td className="px-4 py-3 whitespace-nowrap">
                                     <div className="flex items-center">
                                       <div
-                                        className={`w-2 h-2 rounded-full mr-2 ${
-                                          node.type === "user"
+                                        className={`w-2 h-2 rounded-full mr-2 ${node.type === "user"
                                             ? "bg-blue-500"
                                             : node.type === "group"
-                                            ? "bg-green-500"
-                                            : "bg-yellow-500"
-                                        }`}
+                                              ? "bg-green-500"
+                                              : "bg-yellow-500"
+                                          }`}
                                       ></div>
                                       <div className="text-sm font-medium text-gray-900">
                                         {node.label}
                                       </div>
                                       <Badge
-                                        className={`ml-2 ${
-                                          node.type === "user"
+                                        className={`ml-2 ${node.type === "user"
                                             ? "bg-blue-100 text-blue-800 border border-blue-200"
                                             : node.type === "group"
-                                            ? "bg-green-100 text-green-800 border border-green-200"
-                                            : "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                                        }`}
+                                              ? "bg-green-100 text-green-800 border border-green-200"
+                                              : "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                                          }`}
                                       >
                                         {node.type === "user"
                                           ? "User"
                                           : node.type === "group"
-                                          ? "Group"
-                                          : "Approval"}
+                                            ? "Group"
+                                            : "Approval"}
                                       </Badge>
                                     </div>
                                   </td>
                                   <td className="px-4 py-3 whitespace-nowrap">
                                     <span
-                                      className={`px-2.5 py-0.5 inline-flex items-center text-xs leading-5 font-semibold rounded-md ${
-                                        node.status === "Assigned" ||
-                                        node.status === "Initiated"
+                                      className={`px-2.5 py-0.5 inline-flex items-center text-xs leading-5 font-semibold rounded-md ${node.status === "Assigned" ||
+                                          node.status === "Initiated"
                                           ? "bg-green-100 text-green-800 border border-green-200"
                                           : "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                                      }`}
+                                        }`}
                                     >
                                       <span
-                                        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                                          node.status === "Assigned" ||
-                                          node.status === "Initiated"
+                                        className={`w-1.5 h-1.5 rounded-full mr-1.5 ${node.status === "Assigned" ||
+                                            node.status === "Initiated"
                                             ? "bg-green-500"
                                             : "bg-yellow-500"
-                                        }`}
+                                          }`}
                                       ></span>
                                       {node.status}
                                     </span>
@@ -2268,24 +2257,22 @@ export function DocumentTable({
                                           className="flex items-center group"
                                         >
                                           <span
-                                            className={`bg-blue-50 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-l-md border-r border-blue-200 group-hover:bg-blue-100 transition-colors ${
-                                              index % 3 === 1
+                                            className={`bg-blue-50 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-l-md border-r border-blue-200 group-hover:bg-blue-100 transition-colors ${index % 3 === 1
                                                 ? "bg-green-50 text-green-800 border-green-200 group-hover:bg-green-100"
                                                 : index % 3 === 2
-                                                ? "bg-purple-50 text-purple-800 border-purple-200 group-hover:bg-purple-100"
-                                                : ""
-                                            }`}
+                                                  ? "bg-purple-50 text-purple-800 border-purple-200 group-hover:bg-purple-100"
+                                                  : ""
+                                              }`}
                                           >
                                             {attr.name}
                                           </span>
                                           <span
-                                            className={`bg-white text-gray-700 text-xs px-2 py-0.5 rounded-r-md border ${
-                                              index % 3 === 1
+                                            className={`bg-white text-gray-700 text-xs px-2 py-0.5 rounded-r-md border ${index % 3 === 1
                                                 ? "border-green-100 border-l-0 group-hover:border-green-200"
                                                 : index % 3 === 2
-                                                ? "border-purple-100 border-l-0 group-hover:border-purple-200"
-                                                : "border-blue-100 border-l-0 group-hover:border-blue-200"
-                                            } transition-colors`}
+                                                  ? "border-purple-100 border-l-0 group-hover:border-purple-200"
+                                                  : "border-blue-100 border-l-0 group-hover:border-blue-200"
+                                              } transition-colors`}
                                           >
                                             {attr.value}
                                           </span>
