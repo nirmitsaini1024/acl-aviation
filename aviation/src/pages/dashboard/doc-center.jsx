@@ -1,7 +1,7 @@
 // Modified grid layout to put date filters on a new line
 // Main change: Split the grid into two separate grid sections
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { DocumentTable } from "@/components/document-table";
 import {
   AlertCircle,
@@ -36,6 +36,7 @@ import { format } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { AbilityContext } from "@/abilityContext";
 
 // Domain and Department Options
 const domains = ["Airport", "Airline"];
@@ -56,11 +57,20 @@ const categoryOptions = {
   Airline: ["ASP", "ADFP"],
 };
 
+// Permission level constants
+const PERMISSION_LEVELS = {
+  NO_ACCESS: 'no_access',
+  VIEW_ACCESS: 'view_access',
+  WRITE_ACCESS: 'write_access', 
+  ADMIN_ACCESS: 'admin_access'
+};
+
 export default function DocCenter({setIsBotOpen}) {
   // Get URL search params and navigation
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const ability = useContext(AbilityContext);
 
   // Filter states
   const [documentType, setDocumentType] = useState("all_types");
@@ -82,6 +92,133 @@ export default function DocCenter({setIsBotOpen}) {
       ? tabParam
       : "active"
   );
+
+  // Check if user has any access to a resource
+  const hasAccess = (permissionLevel) => {
+    return permissionLevel && permissionLevel !== PERMISSION_LEVELS.NO_ACCESS;
+  };
+
+  // Check specific permission capabilities
+  const canView = (permissionLevel) => {
+    return [
+      PERMISSION_LEVELS.VIEW_ACCESS,
+      PERMISSION_LEVELS.WRITE_ACCESS, 
+      PERMISSION_LEVELS.ADMIN_ACCESS
+    ].includes(permissionLevel);
+  };
+
+  const canEdit = (permissionLevel) => {
+    return [
+      PERMISSION_LEVELS.WRITE_ACCESS,
+      PERMISSION_LEVELS.ADMIN_ACCESS
+    ].includes(permissionLevel);
+  };
+
+  const canManage = (permissionLevel) => {
+    return permissionLevel === PERMISSION_LEVELS.ADMIN_ACCESS;
+  };
+
+  // Check tab permissions using CASL ability
+  const checkTabPermission = (tabName) => {
+    const resourceName = `documentRepoAccess.${tabName}`;
+    
+    const canViewTab = ability?.can('read', resourceName) || false;
+    const canManageTab = ability?.can('manage', resourceName) || false;
+    
+    // Determine permission level based on CASL abilities
+    if (!canViewTab && !canManageTab) {
+      return PERMISSION_LEVELS.NO_ACCESS;
+    } else if (canViewTab && !canManageTab) {
+      return PERMISSION_LEVELS.VIEW_ACCESS;
+    } else if (canViewTab && canManageTab) {
+      // Could be write or admin - check for admin-specific permissions
+      const canAdminTab = ability?.can('admin', resourceName) || false;
+      return canAdminTab ? PERMISSION_LEVELS.ADMIN_ACCESS : PERMISSION_LEVELS.WRITE_ACCESS;
+    }
+    
+    return PERMISSION_LEVELS.NO_ACCESS;
+  };
+
+  // Get permission levels for all tabs
+  const inReviewAccess = checkTabPermission('inReview');
+  const referenceDocumentAccess = checkTabPermission('referenceDocument');
+  const approvedAccess = checkTabPermission('approved');
+  const deactivatedAccess = checkTabPermission('deactivated');
+
+  // Generate available tabs based on permissions
+  const getAvailableTabs = () => {
+    const tabs = [];
+
+    if (canView(inReviewAccess)) {
+      tabs.push({
+        value: 'active',
+        label: 'In Review',
+        accessLevel: inReviewAccess
+      });
+    }
+
+    if (canView(referenceDocumentAccess)) {
+      tabs.push({
+        value: 'refdoc',
+        label: 'Reference Documents',
+        accessLevel: referenceDocumentAccess
+      });
+    }
+
+    if (canView(approvedAccess)) {
+      tabs.push({
+        value: 'approved',
+        label: 'Approved',
+        accessLevel: approvedAccess
+      });
+    }
+
+    if (canView(deactivatedAccess)) {
+      tabs.push({
+        value: 'disapproved',
+        label: 'Deactivated',
+        accessLevel: deactivatedAccess
+      });
+    }
+
+    return tabs;
+  };
+
+  const availableTabs = getAvailableTabs();
+  const defaultTab = availableTabs.length > 0 ? availableTabs[0].value : null;
+
+  const getTabTriggerStyles = (tabValue, accessLevel) => {
+    const baseStyles = 'flex-1';
+    
+    const accessStyles = {
+      [PERMISSION_LEVELS.VIEW_ACCESS]: 'opacity-80',
+      [PERMISSION_LEVELS.WRITE_ACCESS]: '',
+      [PERMISSION_LEVELS.ADMIN_ACCESS]: 'font-semibold'
+    };
+    
+    const colorStyles = {
+      'active': 'data-[state=active]:bg-blue-500 data-[state=active]:text-white',
+      'approved': 'data-[state=active]:bg-green-600 data-[state=active]:text-white',
+      'disapproved': 'data-[state=active]:bg-red-400 data-[state=active]:text-white', 
+      'refdoc': 'data-[state=active]:bg-yellow-500 data-[state=active]:text-white'
+    };
+    
+    return `${baseStyles} ${accessStyles[accessLevel] || ''} ${colorStyles[tabValue] || ''}`;
+  };
+
+  // Generate permission props for table components
+  const generatePermissionProps = (accessLevel) => {
+    return {
+      accessLevel: accessLevel,
+      canView: canView(accessLevel),
+      canEdit: canEdit(accessLevel),
+      canManage: canEdit(accessLevel), // canManage for compatibility
+      isViewOnly: accessLevel === PERMISSION_LEVELS.VIEW_ACCESS,
+      hasWriteAccess: accessLevel === PERMISSION_LEVELS.WRITE_ACCESS,
+      hasAdminAccess: accessLevel === PERMISSION_LEVELS.ADMIN_ACCESS,
+      canAdminister: canManage(accessLevel)
+    };
+  };
 
   // Extract unique document types and names for dropdowns
   const documentTypes = [...new Set(documents.map((doc) => doc.type))];
@@ -200,6 +337,19 @@ export default function DocCenter({setIsBotOpen}) {
     setIsResetFilters(true);
   };
 
+  // Debug information (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('=== PERMISSION DEBUG ===');
+    console.log('CASL Ability:', ability);
+    console.log('Tab Access Levels:', {
+      inReview: inReviewAccess,
+      referenceDocument: referenceDocumentAccess,
+      approved: approvedAccess,
+      deactivated: deactivatedAccess
+    });
+    console.log('Available Tabs:', availableTabs);
+  }
+
   return (
     <div className="space-y-6">
       {/* Filter Dropdowns */}
@@ -259,7 +409,7 @@ export default function DocCenter({setIsBotOpen}) {
               >
                 <SelectTrigger className="h-10 bg-white border-blue-200 shadow-sm w-full hover:border-blue-300 focus:ring-blue-300">
                   <div className="flex items-center">
-                    <LayoutGrid className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Layers className="mr-2 h-4 w-4 text-muted-foreground" />
                     <SelectValue placeholder="Department" />
                   </div>
                 </SelectTrigger>
@@ -575,43 +725,31 @@ export default function DocCenter({setIsBotOpen}) {
 
       {/* Document Status Tabs */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        {/* <h2 className="text-xl font-medium text-blue-600 mb-4">
-          Document Store
-        </h2> */}
+        {availableTabs.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No document access permissions available.</p>
+          </div>
+        ) : (
         <Tabs
-          defaultValue="active"
+            defaultValue={defaultTab}
           className="w-full duration-300 transition-all ease-in-out"
           value={activeTab}
           onValueChange={handleTabChange}
         >
           <TabsList className="mb-4 bg-blue-50 w-full">
+              {availableTabs.map((tab) => (
             <TabsTrigger
-              value="active"
-              className="flex-1 data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                  key={tab.value}
+                  value={tab.value}
+                  className={getTabTriggerStyles(tab.value, tab.accessLevel)}
             >
-              In Review
+                  {tab.label}
             </TabsTrigger>
-            <TabsTrigger
-              value="refdoc"
-              className="flex-1 data-[state=active]:bg-yellow-500 data-[state=active]:text-white"
-            >
-              Reference Documents
-            </TabsTrigger>
-            <TabsTrigger
-              value="approved"
-              className="flex-1 data-[state=active]:bg-green-600 data-[state=active]:text-white"
-            >
-              Approved
-            </TabsTrigger>
-            <TabsTrigger
-              value="disapproved"
-              className="flex-1 data-[state=active]:bg-red-400 data-[state=active]:text-white"
-            >
-              Deactivated
-            </TabsTrigger>
+              ))}
           </TabsList>
 
           {/* In Review Tab */}
+            {canView(inReviewAccess) && (
           <TabsContent value="active">
             <DocumentTable
               documentTypeFilter={appliedFilters.documentType}
@@ -626,10 +764,13 @@ export default function DocCenter({setIsBotOpen}) {
               IsresetFilters={IsresetFilters}
               setIsResetFilters={setIsResetFilters}
               setIsBotOpen={setIsBotOpen}
+                  {...generatePermissionProps(inReviewAccess)}
             />
           </TabsContent>
+            )}
 
           {/* Reference Documents Tab */}
+            {canView(referenceDocumentAccess) && (
           <TabsContent value="refdoc">
             <DocumentTable
               documentTypeFilter={appliedFilters.documentType}
@@ -644,10 +785,13 @@ export default function DocCenter({setIsBotOpen}) {
               IsresetFilters={true}
               setIsResetFilters={setIsResetFilters}
               setIsBotOpen={setIsBotOpen}
+                  {...generatePermissionProps(referenceDocumentAccess)}
             />
           </TabsContent>
+            )}
 
           {/* Approved Tab */}
+            {canView(approvedAccess) && (
           <TabsContent value="approved">
             <DocumentTable
               documentTypeFilter={appliedFilters.documentType}
@@ -662,10 +806,13 @@ export default function DocCenter({setIsBotOpen}) {
               IsresetFilters={IsresetFilters}
               setIsResetFilters={setIsResetFilters}
               setIsBotOpen={setIsBotOpen}
+                  {...generatePermissionProps(approvedAccess)}
             />
           </TabsContent>
+            )}
 
           {/* Deactivated Tab */}
+            {canView(deactivatedAccess) && (
           <TabsContent value="disapproved">
             <DocumentTable
               documentTypeFilter={appliedFilters.documentType}
@@ -679,9 +826,12 @@ export default function DocCenter({setIsBotOpen}) {
               status="disapproved"
               IsresetFilters={IsresetFilters}
               setIsResetFilters={setIsResetFilters}
+                  {...generatePermissionProps(deactivatedAccess)}
             />
           </TabsContent>
+            )}
         </Tabs>
+        )}
       </div>
     </div>
   );
