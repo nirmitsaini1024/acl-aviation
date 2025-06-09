@@ -1,10 +1,24 @@
-import { useState } from "react";
-import { Edit, Trash2, Search, Loader2, PlusCircle, Eye } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import {
+  Edit,
+  Trash2,
+  Search,
+  ChevronUp,
+  ChevronDown,
+  Users,
+  Loader2,
+  UserPlus,
+  X,
+  ArrowUpDown,
+  RefreshCw,
+  PlusCircle,
+  Eye,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-// To-Do create seperate component for this file: role-form, role-table, role-context
 import {
   Card,
   CardContent,
@@ -31,6 +45,67 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { getAuthHeaders, getTenantId } from "@/utils/auth";
+
+// API functions
+const API_BASE_URL = "http://localhost:3000";
+
+const fetchRoles = async () => {
+  try {
+    console.log('Fetching roles from API...');
+    const response = await fetch(`${API_BASE_URL}/roles`, {
+      headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('Fetched roles:', data);
+    return data.roleData || data || [];
+  } catch (error) {
+    console.error("Error fetching roles:", error);
+    throw error;
+  }
+};
+
+const createRole = async (roleData) => {
+  const tenant_id = "683c46b49b5ac2818e3818ad"; // Hardcoded tenant ID as in group management
+  const response = await fetch(`${API_BASE_URL}/roles`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...roleData, tenant_id }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const data = await response.json();
+  return data;
+};
+
+const updateRole = async (roleId, roleData) => {
+  const tenant_id = getTenantId();
+  const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ ...roleData, tenant_id }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const data = await response.json();
+  return data;
+};
+
+const deleteRole = async (roleId) => {
+  const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return true;
+};
 
 // Table components (inline definitions)
 const Table = ({ children, className = "" }) => (
@@ -378,6 +453,7 @@ const sections = {
     description: "Escalated task permissions",
   },
 };
+
 // Domain and department options
 const domains = ["Airport", "Airline"];
 
@@ -391,92 +467,6 @@ const departmentOptions = {
   ],
   Airline: ["Airline Security", "Airline Operations"],
 };
-
-// Mock initial roles data with domain, department, category (keeping existing data)
-const initialRoles = [
-  {
-    id: "1",
-    name: "System Administrator",
-    description: "Full system access and control",
-    domain: "Airport",
-    department: "TSA",
-    category: "ASP",
-    roleName: "Administrator",
-    roleDescription: "Full system access and control",
-    effectiveDate: "2023-01-01",
-    permissions: {
-      "in-review": "admin_access",
-      "reference-document-access": "view_access",
-      "notify-in-review": "admin_access",
-      "reference-document": "view_access",
-      approved: "view_access",
-      deactivated: "admin_access",
-      "review-administration-access": "admin_access",
-      upload: "admin_access",
-      "upload-working-copy": "admin_access",
-      "upload-reference-document": "admin_access",
-      "sign-off": "admin_access",
-      "review-management": "admin_access",
-      "document-view": "admin_access",
-      pending: "admin_access",
-      "approved-view": "admin_access",
-      "final-copy": "view_access",
-      summary: "view_access",
-      "annotated-docs": "view_access",
-      "deactivated-view": "view_access",
-      "reference-documents": "view_access",
-      group: "admin_access",
-      "group-level": "admin_access",
-      review: "view_access",
-      "write-approval": "write_access",
-      user: "admin_access",
-      "escalated-tasks-access": "admin_access",
-      notify: "admin_access",
-      assign: "admin_access",
-    },
-  },
-  {
-    id: "2",
-    name: "Content Editor",
-    description: "Content management and editing permissions",
-    domain: "Airline",
-    department: "Airline Security",
-    category: "ADFP",
-    roleName: "HR Manager",
-    roleDescription: "Manage HR functions and employee records",
-    effectiveDate: "2023-01-15",
-    permissions: {
-      "in-review": "write_access",
-      "reference-document-access": "no_access",
-      "notify-in-review": "no_access",
-      "reference-document": "view_access",
-      approved: "view_access",
-      deactivated: "view_access",
-      "review-administration-access": "admin_access",
-      upload: "write_access",
-      "upload-working-copy": "write_access",
-      "upload-reference-document": "view_access",
-      "sign-off": "no_access",
-      "review-management": "admin_access",
-      "document-view": "admin_access",
-      pending: "admin_access",
-      "approved-view": "admin_access",
-      "final-copy": "view_access",
-      summary: "view_access",
-      "annotated-docs": "view_access",
-      "deactivated-view": "view_access",
-      "reference-documents": "view_access",
-      group: "view_access",
-      "group-level": "view_access",
-      review: "view_access",
-      "write-approval": "no_access",
-      user: "view_access",
-      "escalated-tasks-access": "no_access",
-      notify: "no_access",
-      assign: "no_access",
-    },
-  },
-];
 
 // Badge Component
 function Badge({ children, variant = "default" }) {
@@ -497,7 +487,7 @@ function Badge({ children, variant = "default" }) {
 }
 
 // Access Control Viewer Component
-function AccessControlViewer({ permissions: rolePermissions }) {
+export function AccessControlViewer({ permissions: rolePermissions }) {
   const [activeTab, setActiveTab] = useState("document-repository");
 
   // Get permission level display info
@@ -1094,20 +1084,84 @@ function AccessControlViewer({ permissions: rolePermissions }) {
   );
 }
 
-// RoleForm Component with Access Control (Category Removed)
-function RoleForm({ role, onSave, onCancel }) {
+// RoleForm Component with new naming convention
+export function RoleForm({ role, onSave, onCancel }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Initialize default permission values if not already set
+  const getDefaultPermissions = () => {
+    const defaultPermissions = {};
+    permissions.forEach((permission) => {
+      if (permission.defaultLevel) {
+        defaultPermissions[permission.id] = permission.defaultLevel;
+      }
+    });
+    return defaultPermissions;
+  };
+
   const [formData, setFormData] = useState({
-    id: role?.id || "",
-    name: role?.name || "",
-    description: role?.description || "",
     domain: role?.domain || "",
     department: role?.department || "",
     roleName: role?.roleName || "",
-    roleDescription: role?.roleDescription || "",
-    effectiveDate:
-      role?.effectiveDate || new Date().toISOString().split("T")[0],
-    permissions: role?.permissions || {},
+    roleTitle: role?.roleTitle || "",
+    description: role?.description || "",
+    documentRepoAccess: role?.documentRepoAccess || {
+      inReview: {
+        permission: "no_access",
+        actions: {
+          referenceDocumentAccess: "no_access",
+          notify: "no_access"
+        }
+      },
+      referenceDocument: "no_access",
+      approved: "no_access",
+      deactivated: "no_access"
+    },
+    reviewAdministration: role?.reviewAdministration || {
+      reviewAdministrationAccess: {
+        permission: "no_access",
+        upload: {
+          permission: "no_access",
+          actions: {
+            uploadWorkingCopy: "no_access",
+            uploadReferenceDocument: "no_access"
+          }
+        },
+        signOff: "no_access"
+      },
+      reviewManagement: "no_access",
+      adminDocumentRepositoryView: {
+        permission: "no_access",
+        pending: "no_access",
+        approved: {
+          permission: "no_access",
+          actions: {
+            finalCopy: "no_access",
+            summary: "no_access",
+            annotatedDocs: "no_access"
+          }
+        },
+        deactivated: "no_access",
+        referenceDocuments: "no_access"
+      }
+    },
+    escalatedTaskAccess: role?.escalatedTaskAccess || {
+      notify: "no_access",
+      assign: "no_access",
+      escalatedTaskAccess: "no_access"
+    },
+    taskAccess: role?.taskAccess || {
+      group: {
+        permission: "no_access",
+        actions: {
+          review: "no_access",
+          approval: "no_access"
+        }
+      },
+      user: "no_access"
+    },
+    permissions: role?.permissions || getDefaultPermissions(),
   });
 
   const [activeTab, setActiveTab] = useState("document-repository");
@@ -1119,6 +1173,16 @@ function RoleForm({ role, onSave, onCancel }) {
     "group-level": true,
   });
 
+  // Run initialization on component mount
+  useEffect(() => {
+    if (!role) {
+      setFormData((prev) => ({
+        ...prev,
+        permissions: getDefaultPermissions(),
+      }));
+    }
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1127,48 +1191,126 @@ function RoleForm({ role, onSave, onCancel }) {
   const handleSelectChange = (name, value) => {
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
-
-      // Reset department when domain changes
+      // Reset dependent fields when domain changes
       if (name === "domain") {
         newData.department = "";
       }
-
       return newData;
     });
   };
 
-  // Initialize default permission values if not already set
-  const initializeDefaultPermissions = () => {
-    const updatedPermissions = { ...formData.permissions };
+  // Helper functions for nested permission mapping
+  const updatePermissionByPath = (data, permissionId, value) => {
+    const pathMap = {
+      "in-review": "documentRepoAccess.inReview.permission",
+      "reference-document-access": "documentRepoAccess.inReview.actions.referenceDocumentAccess",
+      "notify-in-review": "documentRepoAccess.inReview.actions.notify",
+      "reference-document": "documentRepoAccess.referenceDocument",
+      "approved": "documentRepoAccess.approved",
+      "deactivated": "documentRepoAccess.deactivated",
+      "review-administration-access": "reviewAdministration.reviewAdministrationAccess.permission",
+      "upload": "reviewAdministration.reviewAdministrationAccess.upload.permission",
+      "upload-working-copy": "reviewAdministration.reviewAdministrationAccess.upload.actions.uploadWorkingCopy",
+      "upload-reference-document": "reviewAdministration.reviewAdministrationAccess.upload.actions.uploadReferenceDocument",
+      "sign-off": "reviewAdministration.reviewAdministrationAccess.signOff",
+      "review-management": "reviewAdministration.reviewManagement",
+      "document-view": "reviewAdministration.adminDocumentRepositoryView.permission",
+      "pending": "reviewAdministration.adminDocumentRepositoryView.pending",
+      "approved-view": "reviewAdministration.adminDocumentRepositoryView.approved.permission",
+      "final-copy": "reviewAdministration.adminDocumentRepositoryView.approved.actions.finalCopy",
+      "summary": "reviewAdministration.adminDocumentRepositoryView.approved.actions.summary",
+      "annotated-docs": "reviewAdministration.adminDocumentRepositoryView.approved.actions.annotatedDocs",
+      "deactivated-view": "reviewAdministration.adminDocumentRepositoryView.deactivated",
+      "reference-documents": "reviewAdministration.adminDocumentRepositoryView.referenceDocuments",
+      "escalated-tasks-access": "escalatedTaskAccess.escalatedTaskAccess",
+      "notify": "escalatedTaskAccess.notify",
+      "assign": "escalatedTaskAccess.assign",
+      "group": "taskAccess.group.permission",
+      "review": "taskAccess.group.actions.review",
+      "write-approval": "taskAccess.group.actions.approval",
+      "user": "taskAccess.user"
+    };
 
-    permissions.forEach((permission) => {
-      if (permission.defaultLevel && !updatedPermissions[permission.id]) {
-        updatedPermissions[permission.id] = permission.defaultLevel;
+    const path = pathMap[permissionId];
+    if (path) {
+      const keys = path.split('.');
+      let current = data;
+      
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) {
+          current[keys[i]] = {};
+        }
+        current = current[keys[i]];
       }
-    });
-
-    if (!role) {
-      setFormData((prev) => ({
-        ...prev,
-        permissions: updatedPermissions,
-      }));
+      
+      current[keys[keys.length - 1]] = value;
     }
   };
 
-  // Run initialization on component mount
-  useState(() => {
-    initializeDefaultPermissions();
-  }, []);
+  const getPermissionByPath = (data, permissionId) => {
+    const pathMap = {
+      "in-review": "documentRepoAccess.inReview.permission",
+      "reference-document-access": "documentRepoAccess.inReview.actions.referenceDocumentAccess",
+      "notify-in-review": "documentRepoAccess.inReview.actions.notify",
+      "reference-document": "documentRepoAccess.referenceDocument",
+      "approved": "documentRepoAccess.approved",
+      "deactivated": "documentRepoAccess.deactivated",
+      "review-administration-access": "reviewAdministration.reviewAdministrationAccess.permission",
+      "upload": "reviewAdministration.reviewAdministrationAccess.upload.permission",
+      "upload-working-copy": "reviewAdministration.reviewAdministrationAccess.upload.actions.uploadWorkingCopy",
+      "upload-reference-document": "reviewAdministration.reviewAdministrationAccess.upload.actions.uploadReferenceDocument",
+      "sign-off": "reviewAdministration.reviewAdministrationAccess.signOff",
+      "review-management": "reviewAdministration.reviewManagement",
+      "document-view": "reviewAdministration.adminDocumentRepositoryView.permission",
+      "pending": "reviewAdministration.adminDocumentRepositoryView.pending",
+      "approved-view": "reviewAdministration.adminDocumentRepositoryView.approved.permission",
+      "final-copy": "reviewAdministration.adminDocumentRepositoryView.approved.actions.finalCopy",
+      "summary": "reviewAdministration.adminDocumentRepositoryView.approved.actions.summary",
+      "annotated-docs": "reviewAdministration.adminDocumentRepositoryView.approved.actions.annotatedDocs",
+      "deactivated-view": "reviewAdministration.adminDocumentRepositoryView.deactivated",
+      "reference-documents": "reviewAdministration.adminDocumentRepositoryView.referenceDocuments",
+      "escalated-tasks-access": "escalatedTaskAccess.escalatedTaskAccess",
+      "notify": "escalatedTaskAccess.notify",
+      "assign": "escalatedTaskAccess.assign",
+      "group": "taskAccess.group.permission",
+      "review": "taskAccess.group.actions.review",
+      "write-approval": "taskAccess.group.actions.approval",
+      "user": "taskAccess.user"
+    };
+
+    const path = pathMap[permissionId];
+    if (path) {
+      const keys = path.split('.');
+      let current = data;
+      
+      for (const key of keys) {
+        if (current && current[key] !== undefined) {
+          current = current[key];
+        } else {
+          return "";
+        }
+      }
+      
+      return current || "";
+    }
+    return "";
+  };
 
   // Handle permission level change
   const handlePermissionLevelChange = (permissionId, level) => {
-    setFormData((prev) => ({
-      ...prev,
-      permissions: {
+    setFormData((prev) => {
+      const newData = { ...prev };
+      // Update both the new structure and maintain the old permissions for compatibility
+      updatePermissionByPath(newData, permissionId, level);
+      
+      // Also update the permissions object for backward compatibility
+      newData.permissions = {
         ...prev.permissions,
         [permissionId]: level,
-      },
-    }));
+      };
+      
+      return newData;
+    });
   };
 
   // Toggle expanded state for an item
@@ -1178,6 +1320,7 @@ function RoleForm({ role, onSave, onCancel }) {
       [itemId]: !prev[itemId],
     }));
   };
+
   // Get permission level color
   const getPermissionLevelColor = (level) => {
     switch (level) {
@@ -1220,36 +1363,96 @@ function RoleForm({ role, onSave, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Prepare data in the required format
+      const apiData = {
+        domain: formData.domain,
+        department: formData.department,
+        roleName: formData.roleName,
+        roleTitle: formData.roleTitle,
+        description: formData.description,
+        documentRepoAccess: formData.documentRepoAccess,
+        reviewAdministration: formData.reviewAdministration,
+        escalatedTaskAccess: formData.escalatedTaskAccess,
+        taskAccess: formData.taskAccess,
+        permissions: formData.permissions,
+      };
 
       if (onSave) {
-        // If creating a new role, generate a new ID
-        const roleToSave = {
-          ...formData,
-          id: formData.id || Date.now().toString(),
-        };
-        onSave(roleToSave);
+        await onSave(apiData);
       }
 
       // Reset form only if it's a new role creation (not editing)
       if (!role) {
         setFormData({
-          id: "",
-          name: "",
-          description: "",
           domain: "",
           department: "",
           roleName: "",
-          roleDescription: "",
-          effectiveDate: new Date().toISOString().split("T")[0],
-          permissions: {},
+          roleTitle: "",
+          description: "",
+          documentRepoAccess: {
+            inReview: {
+              permission: "",
+              actions: {
+                referenceDocumentAccess: "",
+                notify: ""
+              }
+            },
+            referenceDocument: "",
+            approved: "",
+            deactivated: ""
+          },
+          reviewAdministration: {
+            reviewAdministrationAccess: {
+              permission: "",
+              upload: {
+                permission: "",
+                actions: {
+                  uploadWorkingCopy: "",
+                  uploadReferenceDocument: ""
+                }
+              },
+              signOff: ""
+            },
+            reviewManagement: "",
+            adminDocumentRepositoryView: {
+              permission: "",
+              pending: "",
+              approved: {
+                permission: "",
+                actions: {
+                  finalCopy: "",
+                  summary: "",
+                  annotatedDocs: ""
+                }
+              },
+              deactivated: "",
+              referenceDocuments: ""
+            }
+          },
+          escalatedTaskAccess: {
+            notify: "",
+            assign: "",
+            escalatedTaskAccess: ""
+          },
+          taskAccess: {
+            group: {
+              permission: "",
+              actions: {
+                review: "",
+                approval: ""
+              }
+            },
+            user: ""
+          },
+          permissions: getDefaultPermissions(),
         });
-        initializeDefaultPermissions();
       }
     } catch (error) {
       console.error("Form submission failed:", error);
+      setError(error.message || "Failed to save role. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1257,10 +1460,11 @@ function RoleForm({ role, onSave, onCancel }) {
 
   return (
     <Card className="max-w-full">
+
       <CardHeader>
         <CardTitle>{role ? "Edit Role" : "Create Role"}</CardTitle>
       </CardHeader>
-      <div onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
           {/* Basic Information Section */}
           <Card className="border-2 border-gray-200">
@@ -1324,30 +1528,29 @@ function RoleForm({ role, onSave, onCancel }) {
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    placeholder="Enter role name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="border border-gray-200 focus:border-blue-500"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="roleName">Role Short Name*</Label>
+                  <Label htmlFor="roleName">Role Name *</Label>
                   <Input
                     id="roleName"
                     name="roleName"
-                    placeholder="Enter role title"
+                    placeholder="Enter role name"
                     required
                     value={formData.roleName}
                     onChange={handleChange}
                     className="border border-gray-200 focus:border-blue-500"
                   />
                 </div>
-
+                <div className="space-y-2">
+                  <Label htmlFor="roleTitle">Role Title*</Label>
+                  <Input
+                    id="roleTitle"
+                    name="roleTitle"
+                    placeholder="Enter role title"
+                    required
+                    value={formData.roleTitle}
+                    onChange={handleChange}
+                    className="border border-gray-200 focus:border-blue-500"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -1375,6 +1578,7 @@ function RoleForm({ role, onSave, onCancel }) {
               </p>
             </div>
 
+
             {/* Tabs */}
             <div className="flex overflow-x-auto border-b border-gray-200">
               {Object.keys(sections).map((category) => (
@@ -1391,6 +1595,7 @@ function RoleForm({ role, onSave, onCancel }) {
                 </button>
               ))}
             </div>
+
 
             {/* Tab Content - Fixed height with internal scroll */}
             <div className="divide-y divide-blue-100 h-96 overflow-y-auto">
@@ -1416,14 +1621,17 @@ function RoleForm({ role, onSave, onCancel }) {
                   const hasSubItems = subItems.length > 0;
                   const isExpanded = expandedItems[permission.id] || false;
 
+
                   return (
                     <div key={permission.id}>
                       <div
                         className={`flex items-center justify-between p-4 hover:bg-gray-50 ${hasSubItems ? "cursor-pointer" : ""
                           }`}
 
+
                       >
                         <div className="flex items-center">
+
 
                           <div>
                             <h3 className="font-bold text-gray-800">
@@ -1506,6 +1714,7 @@ function RoleForm({ role, onSave, onCancel }) {
                               "no_access";
                             const subItemAvailableLevels =
                               getAvailableLevels(subItem);
+
 
                             return (
                               <div
@@ -1603,6 +1812,7 @@ function RoleForm({ role, onSave, onCancel }) {
                   );
                 })}
 
+
               {/* Sections that need their own headers */}
               {activeTab === "review-administration" && (
                 <>
@@ -1656,6 +1866,7 @@ function RoleForm({ role, onSave, onCancel }) {
                       </Select>
                     </div>
 
+
                     {/* Sub-items of Review Administration Access */}
                     <div className="divide-y divide-blue-100">
                       {permissions
@@ -1678,14 +1889,17 @@ function RoleForm({ role, onSave, onCancel }) {
                           const isExpanded =
                             expandedItems[permission.id] || false;
 
+
                           return (
                             <div key={permission.id}>
                               <div
                                 className={`flex items-center justify-between p-4 pl-8 hover:bg-gray-50 ${hasSubItems ? "cursor-pointer" : ""
                                   }`}
 
+
                               >
                                 <div className="flex items-center">
+
 
                                   <div>
                                     <h3 className="font-bold text-gray-800">
@@ -1769,6 +1983,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                 </div>
                               </div>
 
+
                               {/* Sub-items (third level) */}
                               {hasSubItems && isExpanded && (
                                 <div className="border-t border-blue-50">
@@ -1782,6 +1997,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                       "no_access";
                                     const subItemAvailableLevels =
                                       getAvailableLevels(subItem);
+
 
                                     return (
                                       <div
@@ -1881,6 +2097,7 @@ function RoleForm({ role, onSave, onCancel }) {
                     </div>
                   </div>
 
+
                   {/* Review Management section */}
                   <div className="border-t-2 border-blue-100">
                     <div className="flex items-center justify-between bg-blue-50 p-4">
@@ -1930,6 +2147,7 @@ function RoleForm({ role, onSave, onCancel }) {
                     </div>
                   </div>
 
+
                   {/* Admin Document Repository View section with its sub-items */}
                   <div className="border-t-2 border-blue-100">
                     <div className="flex items-center justify-between bg-blue-50 p-4">
@@ -1973,6 +2191,7 @@ function RoleForm({ role, onSave, onCancel }) {
                       </Select>
                     </div>
 
+
                     {/* Sub-items of Admin Document Repository View */}
                     <div className="divide-y divide-blue-100">
                       {permissions
@@ -1995,14 +2214,17 @@ function RoleForm({ role, onSave, onCancel }) {
                           const isExpanded =
                             expandedItems[permission.id] || false;
 
+
                           return (
                             <div key={permission.id}>
                               <div
                                 className={`flex items-center justify-between p-4 pl-8 hover:bg-gray-50 ${hasSubItems ? "cursor-pointer" : ""
                                   }`}
 
+
                               >
                                 <div className="flex items-center">
+
 
                                   <div>
                                     <h3 className="font-bold text-gray-800">
@@ -2086,6 +2308,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                 </div>
                               </div>
 
+
                               {/* Sub-items (third level) */}
                               {hasSubItems && isExpanded && (
                                 <div className="border-t border-blue-50">
@@ -2099,6 +2322,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                       "no_access";
                                     const subItemAvailableLevels =
                                       getAvailableLevels(subItem);
+
 
                                     return (
                                       <div
@@ -2200,6 +2424,7 @@ function RoleForm({ role, onSave, onCancel }) {
                 </>
               )}
 
+
               {/* Header-level access control for Escalated Tasks */}
               {activeTab === "escalated-tasks" && (
                 <div className="flex items-center justify-between bg-blue-50 p-4">
@@ -2249,6 +2474,7 @@ function RoleForm({ role, onSave, onCancel }) {
                 </div>
               )}
 
+
               {/* Parent sections with child permissions (for Tasks tab) */}
               {sections[activeTab].parents &&
                 Object.entries(sections[activeTab].parents || {}).map(
@@ -2262,6 +2488,7 @@ function RoleForm({ role, onSave, onCancel }) {
                       return null;
                     }
 
+
                     const childPermissions = permissions.filter(
                       (p) =>
                         p.category === activeTab &&
@@ -2269,6 +2496,7 @@ function RoleForm({ role, onSave, onCancel }) {
                         !p.isSubItem
                     );
                     if (childPermissions.length === 0) return null;
+
 
                     return (
                       <div
@@ -2300,6 +2528,7 @@ function RoleForm({ role, onSave, onCancel }) {
                             const isExpanded =
                               expandedItems[permission.id] || false;
 
+
                             return (
                               <div key={permission.id}>
                                 <div
@@ -2312,6 +2541,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                   }
                                 >
                                   <div className="flex items-center">
+
 
                                     <div>
                                       <h3 className="font-bold text-gray-800">
@@ -2395,6 +2625,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                   </div>
                                 </div>
 
+
                                 {/* Sub-items for items in parent sections */}
                                 {hasSubItems && isExpanded && (
                                   <div className="border-t border-blue-50">
@@ -2408,6 +2639,7 @@ function RoleForm({ role, onSave, onCancel }) {
                                         "no_access";
                                       const subItemAvailableLevels =
                                         getAvailableLevels(subItem);
+
 
                                       return (
                                         <div
@@ -2536,34 +2768,51 @@ function RoleForm({ role, onSave, onCancel }) {
             )}
           </Button>
         </CardFooter>
-      </div>
+      </form>
     </Card>
   );
 }
 
-// Main Role Management App Component (for integration into existing pages)
-function RoleManagementApp({ showAddForm, onToggleForm }) {
-  const [roles, setRoles] = useState(initialRoles);
-  const [searchTerm, setSearchTerm] = useState("");
+
+
+
+export function RoleManagementApp({ showAddForm, onToggleForm }) {
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editingRole, setEditingRole] = useState(null);
   const [openPopover, setOpenPopover] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [viewPermissionsRole, setViewPermissionsRole] = useState(null);
 
-  const filteredRoles = roles.filter((role) => {
-    const searchLower = searchTerm.toLowerCase();
+  // Load roles on component mount
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    return (
-      role.domain.toLowerCase().includes(searchLower) ||
-      role.department.toLowerCase().includes(searchLower) ||
-      role.name.toLowerCase().includes(searchLower) ||
-      role.roleName.toLowerCase().includes(searchLower) ||
-      role.description.toLowerCase().includes(searchLower)
-    );
-  });
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const rolesData = await fetchRoles();
+      setRoles(Array.isArray(rolesData) ? rolesData : []);
+    } catch (err) {
+      setError("Failed to load roles. Please check if the server is running on localhost:3000");
+      console.error("Error loading roles:", err);
+      setRoles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleDeleteRole = (roleId) => {
-    setRoles(roles.filter((role) => role.id !== roleId));
-    setOpenPopover(null);
+  const handleDeleteRole = async (roleId) => {
+    try {
+      await deleteRole(roleId);
+      await loadData(); // Refresh data from server
+      setOpenPopover(null);
+    } catch (error) {
+      console.error("Failed to delete role:", error);
+    }
   };
 
   const handleEditRole = (roleId) => {
@@ -2571,18 +2820,19 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
     if (onToggleForm) onToggleForm();
   };
 
-  const handleSaveRole = (roleData) => {
-    if (roleData.id && roles.find((role) => role.id === roleData.id)) {
-      // Editing existing role
-      setRoles(
-        roles.map((role) => (role.id === roleData.id ? roleData : role))
-      );
-    } else {
-      // Adding new role
-      setRoles([...roles, roleData]);
+  const handleSaveRole = async (roleData) => {
+    try {
+      if (editingRole) {
+        await updateRole(editingRole, roleData);
+      } else {
+        await createRole(roleData);
+      }
+      await loadData(); // Refresh data from server
+      setEditingRole(null);
+      if (onToggleForm) onToggleForm(); // Close the form after saving
+    } catch (error) {
+      console.error("Failed to save role:", error);
     }
-    setEditingRole(null);
-    if (onToggleForm) onToggleForm(); // Close the form after saving
   };
 
   const handleCancelEdit = () => {
@@ -2666,14 +2916,26 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRoles.length === 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">
+                  Loading roles...
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-red-500">
+                  {error}
+                </TableCell>
+              </TableRow>
+            ) : roles.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center">
                   No roles found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredRoles.map((role) =>
+              roles.map((role) =>
                 editingRole === role.id ? (
                   <TableRow key={role.id}>
                     <TableCell colSpan={5}>
@@ -2688,7 +2950,7 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
                   <TableRow key={role.id}>
                     <TableCell>
                       <div className="space-y-2">
-                        <div className="font-medium">{role.name}</div>
+                        <div className="font-medium">{role.roleName || role.name}</div>
                         <div className="flex flex-wrap gap-1">
                           <Badge variant="domain">{role.domain}</Badge>
                           <Badge variant="department">{role.department}</Badge>
@@ -2725,7 +2987,7 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
                         >
                           <DialogHeader>
                             <DialogTitle>
-                              Access Controls - {role.name}
+                              Access Controls - {role.roleName || role.name}
                             </DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
@@ -2813,11 +3075,8 @@ function RoleManagementApp({ showAddForm, onToggleForm }) {
   );
 }
 
-// Export individual components for backward compatibility
-export { RoleForm };
-export { RoleManagementApp };
 
-// Default export
+
 export default function App() {
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -2850,3 +3109,4 @@ export default function App() {
     </div>
   );
 }
+                                       
